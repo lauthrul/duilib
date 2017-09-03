@@ -129,6 +129,10 @@ public:
     void SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue);
 
     LRESULT MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, bool& bHandled);
+	void SetTipInfo(LPCTSTR pStrTipValue);
+	LPCTSTR GetTipValue();
+	void SetTipInfoColor(DWORD clrColor);
+	DWORD GetTipValueColor();
 
 protected:
 	enum { 
@@ -151,6 +155,8 @@ protected:
 	bool m_bDrawCaret;
 	bool m_bInited;
 	RECT	m_rcTextPadding;
+	CDuiString m_sTipInfo;
+	DWORD m_dwTipInfoColor;
 };
 
 } // namespace DuiLib

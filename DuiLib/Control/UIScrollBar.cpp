@@ -106,14 +106,18 @@ int CScrollBarUI::GetScrollRange() const
 	return m_nRange;
 }
 
-void CScrollBarUI::SetScrollRange(int nRange)
+void CScrollBarUI::SetScrollRange(int nRange, bool bTriggerEvent/*=true*/)
 {
 	if( m_nRange == nRange ) return;
 
+	int iOldScrollRange = m_nRange;
 	m_nRange = nRange;
 	if( m_nRange < 0 ) m_nRange = 0;
 	if( m_nScrollPos > m_nRange ) m_nScrollPos = m_nRange;
 	SetPos(m_rcItem, true);
+
+	if(bTriggerEvent && m_pManager != NULL) 
+		m_pManager->SendNotify(this, DUI_MSGTYPE_SCROLLRANGECHANGED, m_nRange, iOldScrollRange, true, false);
 }
 
 int CScrollBarUI::GetScrollPos() const

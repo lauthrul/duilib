@@ -16,6 +16,9 @@ namespace DuiLib
 
 		void SetManager(CPaintManagerUI* pManager, CControlUI* pParent, bool bInit = true);
 
+		bool PreActivate();
+		void SetPreActivate(bool bPreActivate);
+
 		bool Activate();
 		void SetEnabled(bool bEnable = true);
 
@@ -46,6 +49,7 @@ namespace DuiLib
 		void PaintText(HDC hDC);
 
 	protected:
+		bool			m_bPreActivate;
 		bool			m_bSelected;
 		CDuiString		m_sGroupName;
 

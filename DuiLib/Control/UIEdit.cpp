@@ -245,7 +245,7 @@ namespace DuiLib
 
 	CEditUI::CEditUI() : m_pWindow(NULL), m_uMaxChar(255), m_bReadOnly(false), 
 		m_bPasswordMode(false), m_cPasswordChar(_T('*')), m_bAutoSelAll(false), m_uButtonState(0), 
-		m_dwEditbkColor(0xFFFFFFFF), m_iWindowStyls(0)
+		m_dwEditbkColor(0xFFFFFFFF), m_iWindowStyls(0), m_dwTipInfoColor(0xFFBAC0C5), m_sTipInfo("")
 	{
 		SetTextPadding(CDuiRect(4, 3, 4, 3));
 		SetBkColor(0xFFFFFFFF);
@@ -607,6 +607,13 @@ namespace DuiLib
 		else if( _tcscmp(pstrName, _T("hotimage")) == 0 ) SetHotImage(pstrValue);
 		else if( _tcscmp(pstrName, _T("focusedimage")) == 0 ) SetFocusedImage(pstrValue);
 		else if( _tcscmp(pstrName, _T("disabledimage")) == 0 ) SetDisabledImage(pstrValue);
+		else if ( _tcscmp(pstrName, _T("tipinfo")) == 0 ) SetTipInfo(pstrValue);
+		else if( _tcscmp(pstrName, _T("tipinfocolor")) == 0 ) {
+			if( *pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
+			LPTSTR pstr = NULL;
+			DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
+			SetTipInfoColor(clrColor);
+		}
 		else if( _tcscmp(pstrName, _T("nativebkcolor")) == 0 ) {
 			if( *pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
 			LPTSTR pstr = NULL;
@@ -641,10 +648,15 @@ namespace DuiLib
 		if( m_dwTextColor == 0 ) m_dwTextColor = m_pManager->GetDefaultFontColor();
 		if( m_dwDisabledTextColor == 0 ) m_dwDisabledTextColor = m_pManager->GetDefaultDisabledColor();
 
-		if( m_sText.IsEmpty() ) return;
-
 		CDuiString sText = m_sText;
-		if( m_bPasswordMode ) {
+		if (sText.IsEmpty() && m_sTipInfo.IsEmpty()) return;
+		
+		bool bTipMode = false;
+		if (sText.IsEmpty()) bTipMode = true;
+
+		if (bTipMode) {
+			sText = m_sTipInfo;
+		} else if( m_bPasswordMode ) {
 			sText.Empty();
 			LPCTSTR p = m_sText.GetData();
 			while( *p != _T('\0') ) {
@@ -658,14 +670,36 @@ namespace DuiLib
 		rc.right -= m_rcTextPadding.right;
 		rc.top += m_rcTextPadding.top;
 		rc.bottom -= m_rcTextPadding.bottom;
-		if( IsEnabled() ) {
-			CRenderEngine::DrawText(hDC, m_pManager, rc, sText, m_dwTextColor, \
-				m_iFont, DT_SINGLELINE | m_uTextStyle);
-		}
-		else {
-			CRenderEngine::DrawText(hDC, m_pManager, rc, sText, m_dwDisabledTextColor, \
-				m_iFont, DT_SINGLELINE | m_uTextStyle);
 
+		DWORD dwColor = m_dwTextColor;
+		if (bTipMode) {
+			dwColor = m_dwTipInfoColor;
+		} else {
+			if( !IsEnabled() ) {
+				dwColor = m_dwDisabledTextColor;
+			}
 		}
+
+		CRenderEngine::DrawText(hDC, m_pManager, rc, sText, dwColor, m_iFont, DT_SINGLELINE | m_uTextStyle);
+	}
+
+	void CEditUI::SetTipInfo( LPCTSTR pStrTipValue )
+	{
+		m_sTipInfo	= pStrTipValue;
+	}
+
+	LPCTSTR CEditUI::GetTipInfo()
+	{
+		return m_sTipInfo.GetData();
+	}
+
+	void CEditUI::SetTipInfoColor( DWORD clrColor )
+	{
+		m_dwTipInfoColor = clrColor;
+	}
+
+	DWORD CEditUI::GetTipInfoColor()
+	{
+		return m_dwTipInfoColor;
 	}
 }

@@ -425,7 +425,12 @@ namespace DuiLib
 		rc.top += m_rcTextPadding.top;
 		rc.bottom -= m_rcTextPadding.bottom;
 
-		DWORD clrColor = IsEnabled()?m_dwTextColor:m_dwDisabledTextColor;
+		DWORD clrColor;
+		if (!IsEnabled() && m_dwDisabledTextColor != 1) {
+			clrColor = m_dwDisabledTextColor;
+		} else {
+			clrColor = m_dwTextColor;
+		}
 
 		if( ((m_uButtonState & UISTATE_PUSHED) != 0) && (GetPushedTextColor() != 0) )
 			clrColor = GetPushedTextColor();

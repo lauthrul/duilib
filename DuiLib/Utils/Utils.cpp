@@ -1011,4 +1011,41 @@ namespace DuiLib
 		::SetCursor(m_hOrigCursor);
 	}
 
+
+	/////////////////////////////////////////////////////////////////////////////////////
+	//
+	//
+	CDuiColor::CDuiColor()
+	{
+
+	}
+
+	CDuiColor::CDuiColor(DWORD dwColor)
+	{
+		m_dwColor = dwColor;
+	}
+
+	CDuiColor::CDuiColor(LPCTSTR lpstrColor)
+	{
+		m_strText = lpstrColor;
+		if( *lpstrColor == _T('#')) lpstrColor = ::CharNext(lpstrColor);
+		LPTSTR pstr = NULL;
+		m_dwColor = _tcstoul(lpstrColor, &pstr, 16);
+	}
+
+	CDuiColor::~CDuiColor()
+	{
+
+	}
+
+	CDuiString CDuiColor::GetString()
+	{
+		return m_strText;
+	}
+
+	DWORD CDuiColor::GetValue()
+	{
+		return m_dwColor;
+	}
+
 } // namespace DuiLib

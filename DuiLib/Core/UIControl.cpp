@@ -26,7 +26,8 @@ m_dwBorderColor(0),
 m_dwFocusBorderColor(0),
 m_bColorHSL(false),
 m_nBorderStyle(PS_SOLID),
-m_nTooltipWidth(300)
+m_nTooltipWidth(300),
+m_dwTooltipDelayTime(100)
 {
     m_cXY.cx = m_cXY.cy = 0;
     m_cxyFixed.cx = m_cxyFixed.cy = 0;
@@ -563,6 +564,16 @@ int CControlUI::GetToolTipWidth( void )
 	return m_nTooltipWidth;
 }
 
+void CControlUI::SetToolTipDelayTime(DWORD dwTime)
+{
+	m_dwTooltipDelayTime = dwTime;
+}
+
+DWORD CControlUI::GetToolTipDelayTime()
+{
+	return m_dwTooltipDelayTime;
+}
+
 TCHAR CControlUI::GetShortcut() const
 {
     return m_chShortcut;
@@ -730,6 +741,32 @@ void CControlUI::RemoveAllCustomAttribute()
 		}
 	}
 	m_mCustomAttrHash.Resize();
+}
+
+CControlUI* CControlUI::FindParentControl(LPCTSTR lpszClassName, LPCTSTR lpszCtrlName)
+{
+	if (lpszClassName == NULL && lpszClassName == NULL)
+		return NULL;
+
+	CControlUI *pParent = this;
+	bool bFind = true;
+	do {
+		pParent = pParent->GetParent();
+		if (pParent != NULL) {
+			if (lpszClassName != NULL && strcmp(pParent->GetClass(), lpszClassName) != 0) {
+				bFind = false;
+			} else {
+				bFind = true;
+			}
+
+			if (lpszCtrlName != NULL && strcmp(pParent->GetName(), lpszCtrlName) != 0) {
+				bFind &= false;
+			} else {
+				bFind &= true;
+			}
+		}
+	}while (!bFind && pParent != NULL);
+	return pParent;
 }
 
 CControlUI* CControlUI::FindControl(FINDCONTROLPROC Proc, LPVOID pData, UINT uFlags)
@@ -983,6 +1020,8 @@ void CControlUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
     else if( _tcscmp(pstrName, _T("name")) == 0 ) SetName(pstrValue);
     else if( _tcscmp(pstrName, _T("text")) == 0 ) SetText(pstrValue);
     else if( _tcscmp(pstrName, _T("tooltip")) == 0 ) SetToolTip(pstrValue);
+	else if( _tcscmp(pstrName, _T("tooltipwidth")) == 0 ) SetToolTipWidth(_ttoi(pstrValue));
+	else if( _tcscmp(pstrName, _T("tooltipdelaytime")) == 0 ) SetToolTipDelayTime(_ttoi(pstrValue));
     else if( _tcscmp(pstrName, _T("userdata")) == 0 ) SetUserData(pstrValue);
     else if( _tcscmp(pstrName, _T("tag")) == 0 ) SetTag(_ttoi(pstrValue));
     else if( _tcscmp(pstrName, _T("enabled")) == 0 ) SetEnabled(_tcscmp(pstrValue, _T("true")) == 0);
@@ -1124,7 +1163,7 @@ void CControlUI::PaintText(HDC hDC)
 
 void CControlUI::PaintBorder(HDC hDC)
 {
-	if(m_rcBorderSize.left > 0 && (m_dwBorderColor != 0 || m_dwFocusBorderColor != 0)) {
+	if(/*m_rcBorderSize.left > 0 &&*/ (m_dwBorderColor != 0 || m_dwFocusBorderColor != 0)) {
 		if( m_cxyBorderRound.cx > 0 || m_cxyBorderRound.cy > 0 )//画圆角边框
 		{
 			if (IsFocused() && m_dwFocusBorderColor != 0)
@@ -1134,6 +1173,8 @@ void CControlUI::PaintBorder(HDC hDC)
 		}
 		else {
 			if (m_rcBorderSize.right == m_rcBorderSize.left && m_rcBorderSize.top == m_rcBorderSize.left && m_rcBorderSize.bottom == m_rcBorderSize.left) {
+				if (m_rcBorderSize.left <= 0)	return;
+
 				if (IsFocused() && m_dwFocusBorderColor != 0)
 					CRenderEngine::DrawRect(hDC, m_rcItem, m_rcBorderSize.left, GetAdjustColor(m_dwFocusBorderColor), m_nBorderStyle);
 				else
@@ -1143,7 +1184,6 @@ void CControlUI::PaintBorder(HDC hDC)
 				RECT rcBorder;
 				if(m_rcBorderSize.left > 0){
 					rcBorder		= m_rcItem;
-                    rcBorder.left  += m_rcBorderSize.left / 2;
 					rcBorder.right	= rcBorder.left;
 					if (IsFocused() && m_dwFocusBorderColor != 0)
 						CRenderEngine::DrawLine(hDC,rcBorder,m_rcBorderSize.left,GetAdjustColor(m_dwFocusBorderColor),m_nBorderStyle);
@@ -1152,10 +1192,7 @@ void CControlUI::PaintBorder(HDC hDC)
 				}
 				if(m_rcBorderSize.top > 0) {
 					rcBorder		= m_rcItem;
-                    rcBorder.top   += m_rcBorderSize.top / 2;
 					rcBorder.bottom	= rcBorder.top;
-                    rcBorder.left  += m_rcBorderSize.left;
-                    rcBorder.right -= m_rcBorderSize.right;
 					if (IsFocused() && m_dwFocusBorderColor != 0)
 						CRenderEngine::DrawLine(hDC,rcBorder,m_rcBorderSize.top,GetAdjustColor(m_dwFocusBorderColor),m_nBorderStyle);
 					else
@@ -1163,8 +1200,7 @@ void CControlUI::PaintBorder(HDC hDC)
 				}
 				if(m_rcBorderSize.right > 0) {
 					rcBorder		= m_rcItem;
-					rcBorder.left	= m_rcItem.right - m_rcBorderSize.right / 2;
-                    rcBorder.right  = rcBorder.left;
+					rcBorder.left	= rcBorder.right;
 					if (IsFocused() && m_dwFocusBorderColor != 0)
 						CRenderEngine::DrawLine(hDC,rcBorder,m_rcBorderSize.right,GetAdjustColor(m_dwFocusBorderColor),m_nBorderStyle);
 					else
@@ -1172,10 +1208,7 @@ void CControlUI::PaintBorder(HDC hDC)
 				}
 				if(m_rcBorderSize.bottom > 0) {
 					rcBorder		= m_rcItem;
-					rcBorder.top	= m_rcItem.bottom - m_rcBorderSize.bottom / 2;
-                    rcBorder.bottom = rcBorder.top;
-                    rcBorder.left  += m_rcBorderSize.left;
-                    rcBorder.right -= m_rcBorderSize.right;
+					rcBorder.top	= rcBorder.bottom;
 					if (IsFocused() && m_dwFocusBorderColor != 0)
 						CRenderEngine::DrawLine(hDC,rcBorder,m_rcBorderSize.bottom,GetAdjustColor(m_dwFocusBorderColor),m_nBorderStyle);
 					else

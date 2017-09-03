@@ -202,6 +202,7 @@ void CComboWnd::OnFinalMessage(HWND hWnd)
     m_pOwner->m_pWindow = NULL;
     m_pOwner->m_uButtonState &= ~ UISTATE_PUSHED;
     m_pOwner->Invalidate();
+	m_pOwner->GetManager()->SendNotify(m_pOwner, DUI_MSGTYPE_DROPUP);
     delete this;
 }
 
@@ -230,6 +231,11 @@ LRESULT CComboWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             m_pLayout->Add(static_cast<CControlUI*>(m_pOwner->GetItemAt(i)));
         }
         m_pm.AttachDialog(m_pLayout);
+
+		CDuiPtrArray *pNotifier = m_pOwner->GetManager()->GetNotifiers();
+		for (int i = 0; pNotifier != NULL && i < pNotifier->GetSize(); i++){
+			m_pm.AddNotifier((INotifyUI*)pNotifier->GetAt(i));
+		}
         
         return 0;
     }
@@ -280,13 +286,16 @@ LRESULT CComboWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     else if( uMsg == WM_MOUSEWHEEL ) {
         int zDelta = (int) (short) HIWORD(wParam);
-        TEventUI event = { 0 };
-        event.Type = UIEVENT_SCROLLWHEEL;
-        event.wParam = MAKELPARAM(zDelta < 0 ? SB_LINEDOWN : SB_LINEUP, 0);
-        event.lParam = lParam;
-        event.dwTimestamp = ::GetTickCount();
-        m_pOwner->DoEvent(event);
-        EnsureVisible(m_pOwner->GetCurSel());
+        //TEventUI event = { 0 };
+        //event.Type = UIEVENT_SCROLLWHEEL;
+        //event.wParam = MAKELPARAM(zDelta < 0 ? SB_LINEDOWN : SB_LINEUP, 0);
+        //event.lParam = lParam;
+        //event.dwTimestamp = ::GetTickCount();
+        //m_pOwner->DoEvent(event);
+        //EnsureVisible(m_pOwner->GetCurSel());
+		int iheight = m_pOwner->GetHeight();
+		int iyScroll = zDelta < 0 ? iheight : 0-iheight;
+		Scroll(0,iyScroll);
         return 0;
     }
     else if( uMsg == WM_KILLFOCUS ) {
@@ -302,7 +311,7 @@ LRESULT CComboWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
                 hWnd = hParentWnd;
             }
             if (!bIsChildFocus) {
-                PostMessage(WM_CLOSE);
+                Close();
                 return 0;
             }
         }
@@ -428,7 +437,7 @@ bool CComboUI::SelectItem(int iIndex, bool bTakeFocus, bool bTriggerEvent)
     if( m_items.GetSize() == 0 ) return false;
     if( iIndex >= m_items.GetSize() ) iIndex = m_items.GetSize() - 1;
     CControlUI* pControl = static_cast<CControlUI*>(m_items[iIndex]);
-    if( !pControl || !pControl->IsVisible() || !pControl->IsEnabled() ) return false;
+    if( !pControl /*|| !pControl->IsVisible()*/ || !pControl->IsEnabled() ) return false;
     IListItemUI* pListItem = static_cast<IListItemUI*>(pControl->GetInterface(DUI_CTR_ILISTITEM));
     if( pListItem == NULL ) return false;
     m_iCurSel = iIndex;
@@ -622,30 +631,37 @@ void CComboUI::DoEvent(TEventUI& event)
             switch( event.chKey ) {
             case VK_F4:
                 Activate();
+                break;
             case VK_UP:
                 SetSelectCloseFlag(false);
                 SelectItem(FindSelectable(m_iCurSel - 1, false));
                 SetSelectCloseFlag(true);
+                break;
             case VK_DOWN:
                 SetSelectCloseFlag(false);
                 SelectItem(FindSelectable(m_iCurSel + 1, true));
                 SetSelectCloseFlag(true);
+                break;
             case VK_PRIOR:
                 SetSelectCloseFlag(false);
                 SelectItem(FindSelectable(m_iCurSel - 1, false));
                 SetSelectCloseFlag(true);
+                break;
             case VK_NEXT:
                 SetSelectCloseFlag(false);
                 SelectItem(FindSelectable(m_iCurSel + 1, true));
                 SetSelectCloseFlag(true);
+                break;
             case VK_HOME:
                 SetSelectCloseFlag(false);
                 SelectItem(FindSelectable(0, false));
                 SetSelectCloseFlag(true);
+                break;
             case VK_END:
                 SetSelectCloseFlag(false);
                 SelectItem(FindSelectable(GetCount() - 1, true));
                 SetSelectCloseFlag(true);
+                break;
             }
             return;
         }
@@ -653,10 +669,10 @@ void CComboUI::DoEvent(TEventUI& event)
     if( event.Type == UIEVENT_SCROLLWHEEL )
     {
         if (IsEnabled()) {
-            bool bDownward = LOWORD(event.wParam) == SB_LINEDOWN;
-            SetSelectCloseFlag(false);
-            SelectItem(FindSelectable(m_iCurSel + (bDownward ? 1 : -1), bDownward));
-            SetSelectCloseFlag(true);
+            //bool bDownward = LOWORD(event.wParam) == SB_LINEDOWN;
+            //SetSelectCloseFlag(false);
+            //SelectItem(FindSelectable(m_iCurSel + (bDownward ? 1 : -1), bDownward));
+            //SetSelectCloseFlag(true);
             return;
         }
     }
@@ -710,6 +726,11 @@ bool CComboUI::Activate()
     if( m_pManager != NULL ) m_pManager->SendNotify(this, DUI_MSGTYPE_DROPDOWN);
     Invalidate();
     return true;
+}
+
+bool CComboUI::IsActivated()
+{
+    return (m_pWindow != NULL);
 }
 
 CDuiString CComboUI::GetText() const

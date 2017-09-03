@@ -45,6 +45,7 @@ public:
     void RemoveAll();
 
     bool Activate();
+    bool IsActivated();
 
 	bool GetShowText() const;
 	void SetShowText(bool flag);

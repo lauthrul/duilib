@@ -26,11 +26,17 @@ LRESULT WindowImplBase::ResponseDefaultKeyEvent(WPARAM wParam)
 	}
 	else if (wParam == VK_ESCAPE)
 	{
-		Close();
+		Close(IDCANCEL);
 		return TRUE;
 	}
 
 	return FALSE;
+}
+
+void WindowImplBase::SetTitle(LPCTSTR pstrTitle)
+{
+    CControlUI *pCtrl = m_PaintManager.FindControl("title");
+    if (pCtrl) pCtrl->SetText(pstrTitle);
 }
 
 UINT WindowImplBase::GetClassStyle() const
@@ -161,9 +167,19 @@ LRESULT WindowImplBase::OnNcHitTest(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 	if( pt.x >= rcClient.left + rcCaption.left && pt.x < rcClient.right - rcCaption.right \
 		&& pt.y >= rcCaption.top && pt.y < rcCaption.bottom ) {
 			CControlUI* pControl = static_cast<CControlUI*>(m_PaintManager.FindControl(pt));
-			if( pControl && _tcsicmp(pControl->GetClass(), DUI_CTR_BUTTON) != 0 && 
+			if( pControl && /*_tcsicmp(pControl->GetClass(), DUI_CTR_BUTTON) != 0 && 
 				_tcsicmp(pControl->GetClass(), DUI_CTR_OPTION) != 0 &&
-				_tcsicmp(pControl->GetClass(), DUI_CTR_TEXT) != 0 )
+				_tcsicmp(pControl->GetClass(), DUI_CTR_TEXT) != 0*/
+				_tcsicmp(pControl->GetClass(), DUI_CTR_LABEL) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_TEXT) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_GIFANIM) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_PROGRESS) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_CONTAINER) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_TABLAYOUT) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_TILELAYOUT) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_CHILDLAYOUT) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_VERTICALLAYOUT) == 0
+				|| _tcsicmp(pControl->GetClass(), DUI_CTR_HORIZONTALLAYOUT) == 0)
 				return HTCAPTION;
 	}
 
@@ -212,7 +228,7 @@ LRESULT WindowImplBase::OnSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 {
 	SIZE szRoundCorner = m_PaintManager.GetRoundCorner();
 #if defined(WIN32) && !defined(UNDER_CE)
-	if( !::IsIconic(*this) && (szRoundCorner.cx != 0 || szRoundCorner.cy != 0) ) {
+	if( !::IsIconic(*this) /*&& (szRoundCorner.cx != 0 || szRoundCorner.cy != 0)*/ ) {
 		CDuiRect rcWnd;
 		::GetWindowRect(*this, &rcWnd);
 		rcWnd.Offset(-rcWnd.left, -rcWnd.top);
@@ -336,6 +352,9 @@ LRESULT WindowImplBase::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& 
 	m_PaintManager.AttachDialog(pRoot);
 	m_PaintManager.AddNotifier(this);
 
+    TCHAR szTitle[MAX_PATH+1] = {0};
+    GetWindowText(m_hWnd, szTitle, MAX_PATH);
+    SetTitle(szTitle);
 	InitWindow();
 	return 0;
 }
@@ -434,7 +453,7 @@ void WindowImplBase::OnClick(TNotifyUI& msg)
 	CDuiString sCtrlName = msg.pSender->GetName();
 	if( sCtrlName == _T("closebtn") )
 	{
-		Close();
+		Close(IDCANCEL);
 		return; 
 	}
 	else if( sCtrlName == _T("minbtn"))

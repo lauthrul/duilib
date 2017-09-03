@@ -39,6 +39,7 @@ namespace DuiLib
 		static LPBYTE m_lpResourceZIPBuffer;
 
 	public:
+        virtual void SetTitle(LPCTSTR pstrTitle);
 		virtual UINT GetClassStyle() const;
 		virtual UILIB_RESOURCETYPE GetResourceType() const;
 		virtual CDuiString GetZIPFileName() const;

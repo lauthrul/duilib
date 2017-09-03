@@ -1077,7 +1077,7 @@ void CTxtWinHost::SetParaFormat(PARAFORMAT2 &p)
 
 CRichEditUI::CRichEditUI() : m_pTwh(NULL), m_bVScrollBarFixing(false), m_bWantTab(true), m_bWantReturn(true), 
     m_bWantCtrlReturn(true), m_bTransparent(true), m_bRich(true), m_bReadOnly(false), m_bWordWrap(false), m_dwTextColor(0), m_iFont(-1), 
-	m_iLimitText(cInitTextMax), m_lTwhStyle(ES_MULTILINE), m_bDrawCaret(true), m_bInited(false)
+	m_iLimitText(cInitTextMax), m_lTwhStyle(ES_MULTILINE), m_bDrawCaret(true), m_bInited(false),m_dwTipInfoColor(0xFFBAC0C5),m_sTipInfo("")
 {
 	::ZeroMemory(&m_rcTextPadding, sizeof(m_rcTextPadding));
 }
@@ -1716,6 +1716,7 @@ void CRichEditUI::DoInit()
     cs.lpszName = m_sText.GetData();
     CreateHost(this, &cs, &m_pTwh);
     if( m_pTwh ) {
+        m_pTwh->LimitText(GetLimitText());
         if( m_bTransparent ) m_pTwh->SetTransparent(TRUE);
         LRESULT lResult;
         m_pTwh->GetTextServices()->TxSendMessage(EM_SETLANGOPTIONS, 0, 0, &lResult);
@@ -1723,7 +1724,6 @@ void CRichEditUI::DoInit()
         m_pManager->AddMessageFilter(this);
 		if( m_pManager->IsLayered() ) m_pManager->SetTimer(this, DEFAULT_TIMERID, ::GetCaretBlinkTime());
     }
-
 	m_bInited= true;
 }
 
@@ -1731,7 +1731,8 @@ HRESULT CRichEditUI::TxSendMessage(UINT msg, WPARAM wparam, LPARAM lparam, LRESU
 {
     if( m_pTwh ) {
         if( msg == WM_KEYDOWN && TCHAR(wparam) == VK_RETURN ) {
-            if( !m_bWantReturn || (::GetKeyState(VK_CONTROL) < 0 && !m_bWantCtrlReturn) ) {
+			SHORT sCtrlState = ::GetKeyState(VK_CONTROL); // sCtrlState>0: pressed, or unpressed
+            if( (sCtrlState >= 0 && !m_bWantReturn) || (sCtrlState < 0 && !m_bWantCtrlReturn) ) {
                 if( m_pManager != NULL ) m_pManager->SendNotify((CControlUI*)this, DUI_MSGTYPE_RETURN);
                 return S_OK;
             }
@@ -2115,8 +2116,8 @@ bool CRichEditUI::DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl
     CRenderClip::GenerateClip(hDC, rcTemp, clip);
     CControlUI::DoPaint(hDC, rcPaint, pStopControl);
 
+	RECT rc;
     if( m_pTwh ) {
-        RECT rc;
         m_pTwh->GetControlRect(&rc);
         // Remember wparam is actually the hdc and lparam is the update
         // rect because this message has been preprocessed by the window.
@@ -2151,6 +2152,16 @@ bool CRichEditUI::DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl
             }
         }
     }
+
+	CDuiString strText = GetText();
+	if (strText.IsEmpty() && !m_sTipInfo.IsEmpty())
+	{
+		DWORD dwOldTextColor = ::GetTextColor(hDC);
+		COLORREF crNewTextColor = RGB(GetBValue(m_dwTipInfoColor), GetGValue(m_dwTipInfoColor), GetRValue(m_dwTipInfoColor));
+		::SetTextColor(hDC, crNewTextColor);
+		DrawText(hDC, m_sTipInfo, -1, &rc, DT_NOPREFIX|DT_EDITCONTROL|DT_WORDBREAK);
+		::SetTextColor(hDC, dwOldTextColor);
+	}
 
     if( m_items.GetSize() > 0 ) {
         RECT rc = m_rcItem;
@@ -2228,15 +2239,19 @@ void CRichEditUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 {
     if( _tcscmp(pstrName, _T("vscrollbar")) == 0 ) {
         if( _tcscmp(pstrValue, _T("true")) == 0 ) m_lTwhStyle |= ES_DISABLENOSCROLL | WS_VSCROLL;
+		else m_lTwhStyle &= ~(ES_DISABLENOSCROLL | WS_VSCROLL);
     }
     if( _tcscmp(pstrName, _T("autovscroll")) == 0 ) {
         if( _tcscmp(pstrValue, _T("true")) == 0 ) m_lTwhStyle |= ES_AUTOVSCROLL;
+		else m_lTwhStyle &= ~ES_AUTOVSCROLL;
     }
     else if( _tcscmp(pstrName, _T("hscrollbar")) == 0 ) {
         if( _tcscmp(pstrValue, _T("true")) == 0 ) m_lTwhStyle |= ES_DISABLENOSCROLL | WS_HSCROLL;
+		else m_lTwhStyle &= ~(ES_DISABLENOSCROLL | WS_HSCROLL);
     }
     if( _tcscmp(pstrName, _T("autohscroll")) == 0 ) {
         if( _tcscmp(pstrValue, _T("true")) == 0 ) m_lTwhStyle |= ES_AUTOHSCROLL;
+		else m_lTwhStyle &= ~ES_AUTOHSCROLL;
     }
     else if( _tcscmp(pstrName, _T("wanttab")) == 0 ) {
         SetWantTab(_tcscmp(pstrValue, _T("true")) == 0);
@@ -2255,12 +2270,15 @@ void CRichEditUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
     }
     else if( _tcscmp(pstrName, _T("multiline")) == 0 ) {
         if( _tcscmp(pstrValue, _T("false")) == 0 ) m_lTwhStyle &= ~ES_MULTILINE;
+		else m_lTwhStyle |= ES_MULTILINE;
     }
     else if( _tcscmp(pstrName, _T("readonly")) == 0 ) {
         if( _tcscmp(pstrValue, _T("true")) == 0 ) { m_lTwhStyle |= ES_READONLY; m_bReadOnly = true; }
+		else  { m_lTwhStyle &= ~ES_READONLY; m_bReadOnly = false; }
     }
     else if( _tcscmp(pstrName, _T("password")) == 0 ) {
         if( _tcscmp(pstrValue, _T("true")) == 0 ) m_lTwhStyle |= ES_PASSWORD;
+		else  m_lTwhStyle &= ~ES_PASSWORD;
     }
     else if( _tcscmp(pstrName, _T("align")) == 0 ) {
         if( _tcsstr(pstrValue, _T("left")) != NULL ) {
@@ -2292,6 +2310,18 @@ void CRichEditUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 		rcTextPadding.right = _tcstol(pstr + 1, &pstr, 10);  ASSERT(pstr);    
 		rcTextPadding.bottom = _tcstol(pstr + 1, &pstr, 10); ASSERT(pstr);    
 		SetTextPadding(rcTextPadding);
+	}
+    else if ( _tcscmp(pstrName, _T("textlimit")) == 0 ) {
+        SetLimitText(_ttoi(pstrValue));
+    }
+	else if ( _tcscmp(pstrName, _T("tipinfo")) == 0 ) {
+		SetTipInfo(pstrValue);
+	}
+	else if( _tcscmp(pstrName, _T("tipinfocolor")) == 0 ) {
+		if( *pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
+		LPTSTR pstr = NULL;
+		DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
+		SetTipInfoColor(clrColor);
 	}
     else CContainerUI::SetAttribute(pstrName, pstrValue);
 }
@@ -2402,6 +2432,25 @@ LRESULT CRichEditUI::MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, boo
     return lResult;
 }
 
+void CRichEditUI::SetTipInfo( LPCTSTR pStrTipValue )
+{
+	m_sTipInfo	= pStrTipValue;
+}
+
+LPCTSTR CRichEditUI::GetTipValue()
+{
+	return m_sTipInfo.GetData();
+}
+
+void CRichEditUI::SetTipInfoColor( DWORD clrColor )
+{
+	m_dwTipInfoColor = clrColor;
+}
+
+DWORD CRichEditUI::GetTipValueColor()
+{
+	return m_dwTipInfoColor;
+}
 
 
 } // namespace DuiLib

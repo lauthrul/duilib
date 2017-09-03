@@ -3,7 +3,7 @@
 
 namespace DuiLib
 {
-	COptionUI::COptionUI() : m_bSelected(false), m_dwSelectedBkColor(0), m_dwSelectedTextColor(0)
+	COptionUI::COptionUI() : m_bSelected(false), m_dwSelectedBkColor(0), m_dwSelectedTextColor(0), m_bPreActivate(true)
 	{
 	}
 
@@ -91,9 +91,20 @@ namespace DuiLib
 		Invalidate();
 	}
 
+	bool COptionUI::PreActivate()
+	{
+		return m_bPreActivate;
+	}
+
+	void COptionUI::SetPreActivate(bool bPreActivate)
+	{
+		m_bPreActivate = bPreActivate;
+	}
+
 	bool COptionUI::Activate()
 	{
 		if( !CButtonUI::Activate() ) return false;
+		if( !PreActivate()) return false;
 		if( !m_sGroupName.IsEmpty() ) Selected(true);
 		else Selected(!m_bSelected);
 
@@ -226,10 +237,19 @@ Label_ForeImage:
 		if( (m_uButtonState & UISTATE_SELECTED) != 0 )
 		{
 			DWORD oldTextColor = m_dwTextColor;
-			if( m_dwSelectedTextColor != 0 ) m_dwTextColor = m_dwSelectedTextColor;
-
 			if( m_dwTextColor == 0 ) m_dwTextColor = m_pManager->GetDefaultFontColor();
 			if( m_dwDisabledTextColor == 0 ) m_dwDisabledTextColor = m_pManager->GetDefaultDisabledColor();
+
+			DWORD clrColor;
+			if( m_dwSelectedTextColor != 0 ) {
+				clrColor = m_dwSelectedTextColor;
+			} else {
+				if (!IsEnabled() && m_dwDisabledTextColor != 1) {
+					clrColor = m_dwDisabledTextColor;
+				} else {
+					clrColor = m_dwTextColor;
+				}
+			}
 
 			if( m_sText.IsEmpty() ) return;
 			int nLinks = 0;
@@ -240,13 +260,9 @@ Label_ForeImage:
 			rc.bottom -= m_rcTextPadding.bottom;
 
 			if( m_bShowHtml )
-				CRenderEngine::DrawHtmlText(hDC, m_pManager, rc, m_sText, IsEnabled()?m_dwTextColor:m_dwDisabledTextColor, \
-				NULL, NULL, nLinks, m_iFont, m_uTextStyle);
+				CRenderEngine::DrawHtmlText(hDC, m_pManager, rc, m_sText, clrColor, NULL, NULL, nLinks, m_iFont, m_uTextStyle);
 			else
-				CRenderEngine::DrawText(hDC, m_pManager, rc, m_sText, IsEnabled()?m_dwTextColor:m_dwDisabledTextColor, \
-				m_iFont, m_uTextStyle);
-
-			m_dwTextColor = oldTextColor;
+				CRenderEngine::DrawText(hDC, m_pManager, rc, m_sText, clrColor, m_iFont, m_uTextStyle);
 		}
 		else
 		{

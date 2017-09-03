@@ -48,6 +48,7 @@ public:
     bool RemoveAt(int iIndex, bool bDoNotDestroy=false);
     void RemoveAll();
 
+	void SetEnabled(bool bEnable = true);
     void DoEvent(TEventUI& event);
     void SetVisible(bool bVisible = true);
     void SetInternVisible(bool bVisible = true);

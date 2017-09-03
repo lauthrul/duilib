@@ -358,26 +358,21 @@ namespace DuiLib
 		rc.top += m_rcTextPadding.top;
 		rc.bottom -= m_rcTextPadding.bottom;
 
+		DWORD clrColor;
+		if (!IsEnabled() && m_dwDisabledTextColor != 1) {
+			clrColor = m_dwDisabledTextColor;
+		} else {
+			clrColor = m_dwTextColor;
+		}
+
 		if(!GetEnabledEffect())
 		{
 			if( m_sText.IsEmpty() ) return;
 			int nLinks = 0;
-			if( IsEnabled() ) {
-				if( m_bShowHtml )
-					CRenderEngine::DrawHtmlText(hDC, m_pManager, rc, m_sText, m_dwTextColor, \
-					NULL, NULL, nLinks, m_iFont, m_uTextStyle);
-				else
-					CRenderEngine::DrawText(hDC, m_pManager, rc, m_sText, m_dwTextColor, \
-					m_iFont, m_uTextStyle);
-			}
-			else {
-				if( m_bShowHtml )
-					CRenderEngine::DrawHtmlText(hDC, m_pManager, rc, m_sText, m_dwDisabledTextColor, \
-					NULL, NULL, nLinks, m_iFont, m_uTextStyle);
-				else
-					CRenderEngine::DrawText(hDC, m_pManager, rc, m_sText, m_dwDisabledTextColor, \
-					m_iFont, m_uTextStyle);
-			}
+			if( m_bShowHtml )
+				CRenderEngine::DrawHtmlText(hDC, m_pManager, rc, m_sText, clrColor, NULL, NULL, nLinks, m_iFont, m_uTextStyle);
+			else
+				CRenderEngine::DrawText(hDC, m_pManager, rc, m_sText, clrColor, m_iFont, m_uTextStyle);
 		}
 		else
 		{

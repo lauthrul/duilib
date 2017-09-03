@@ -17,8 +17,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Build\Release"
-			IntermediateDirectory=".\Build\Release"
+			OutputDirectory="$(ProjectDir)\Build\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectDir)\Build\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -72,14 +72,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="../bin/DuiLib.dll"
+				OutputFile="$(OutDir)\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=".\lib"
 				GenerateManifest="false"
 				DelayLoadDLLs=""
 				BaseAddress="0x11000000"
-				ImportLibrary="../Lib/DuiLib.lib"
+				ImportLibrary="$(TargetDir)$(TargetName).lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -109,8 +109,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Build\Debug"
-			IntermediateDirectory=".\Build\Debug"
+			OutputDirectory="$(ProjectDir)\Build\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectDir)\Build\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -167,7 +167,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="../bin/DuiLib_d.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=".\lib"
@@ -176,7 +175,6 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\$(TargetName).pdb"
 				BaseAddress="0x11000000"
-				ImportLibrary="../lib/DuiLib_d.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -486,11 +484,23 @@
 					>
 				</File>
 				<File
+					RelativePath=".\Utils\UIShadow.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\Utils\Utils.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\Utils\WinImplBase.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Utils\WndShadow.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Utils\WndShadow.h"
 					>
 				</File>
 				<File
@@ -688,6 +698,10 @@
 				</File>
 				<File
 					RelativePath=".\Utils\UIDelegate.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Utils\UIShadow.h"
 					>
 				</File>
 				<File

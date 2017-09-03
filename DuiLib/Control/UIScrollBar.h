@@ -23,7 +23,7 @@ namespace DuiLib
 		bool IsHorizontal();
 		void SetHorizontal(bool bHorizontal = true);
 		int GetScrollRange() const;
-		void SetScrollRange(int nRange);
+		void SetScrollRange(int nRange, bool bTriggerEvent=true);
 		int GetScrollPos() const;
 		void SetScrollPos(int nPos, bool bTriggerEvent=true);
 		int GetLineSize() const;

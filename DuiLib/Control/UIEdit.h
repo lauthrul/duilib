@@ -61,6 +61,11 @@ namespace DuiLib
 		void PaintStatusImage(HDC hDC);
 		void PaintText(HDC hDC);
 
+		void SetTipInfo(LPCTSTR pStrTipValue);
+		LPCTSTR GetTipInfo();
+		void SetTipInfoColor(DWORD clrColor);
+		DWORD GetTipInfoColor();
+
 	protected:
 		CEditWnd* m_pWindow;
 
@@ -72,6 +77,8 @@ namespace DuiLib
 		UINT m_uButtonState;
 		DWORD m_dwEditbkColor;
 		int m_iWindowStyls;
+		CDuiString m_sTipInfo;
+		DWORD m_dwTipInfoColor;
 
 		TDrawInfo m_diNormal;
 		TDrawInfo m_diHot;

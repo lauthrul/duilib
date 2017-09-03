@@ -100,7 +100,6 @@ m_pOffscreenBits(NULL),
 m_hbmpBackground(NULL),
 m_pBackgroundBits(NULL),
 m_iTooltipWidth(-1),
-m_iLastTooltipWidth(-1),
 m_hwndTooltip(NULL),
 m_iHoverTime(1000),
 m_bNoActivate(false),
@@ -111,7 +110,6 @@ m_pFocus(NULL),
 m_pEventHover(NULL),
 m_pEventClick(NULL),
 m_pEventKey(NULL),
-m_pLastToolTip(NULL),
 m_bFirstLayout(true),
 m_bFocusNeeded(false),
 m_bUpdateNeeded(false),
@@ -196,7 +194,6 @@ CPaintManagerUI::~CPaintManagerUI()
 		::DestroyWindow(m_hwndTooltip);
 		m_hwndTooltip = NULL;
 	}
-    m_pLastToolTip = NULL;
     if( m_hDcOffscreen != NULL ) ::DeleteDC(m_hDcOffscreen);
     if( m_hDcBackground != NULL ) ::DeleteDC(m_hDcBackground);
     if( m_hbmpOffscreen != NULL ) ::DeleteObject(m_hbmpOffscreen);
@@ -280,6 +277,7 @@ HANDLE CPaintManagerUI::GetResourceZipHandle()
 void CPaintManagerUI::SetInstance(HINSTANCE hInst)
 {
     m_hInstance = hInst;
+    CShadowUI::Initialize(hInst);
 }
 
 void CPaintManagerUI::SetCurrentPath(LPCTSTR pStrPath)
@@ -1194,35 +1192,22 @@ bool CPaintManagerUI::MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, LR
             m_ToolTip.rect = pHover->GetPos();
             if (m_hwndTooltip == NULL) {
                 m_hwndTooltip = ::CreateWindowEx(0, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWndPaint, NULL, m_hInstance, NULL);
-                ::SendMessage(m_hwndTooltip, TTM_ADDTOOL, 0, (LPARAM)&m_ToolTip);
-                ::SendMessage(m_hwndTooltip, TTM_SETMAXTIPWIDTH, 0, pHover->GetToolTipWidth());
-                ::SendMessage(m_hwndTooltip, TTM_SETTOOLINFO, 0, (LPARAM)&m_ToolTip);
-                ::SendMessage(m_hwndTooltip, TTM_TRACKACTIVATE, TRUE, (LPARAM)&m_ToolTip);
-
-            }
-            // by jiangdong 2016-8-6 修改tooltip 悬停时候 闪烁bug
-            if (m_pLastToolTip == NULL) {
-                m_pLastToolTip = pHover;
-            }
-            else{
-                if (m_pLastToolTip == pHover){
-                    if (m_iLastTooltipWidth != pHover->GetToolTipWidth()){
-                        ::SendMessage(m_hwndTooltip, TTM_SETMAXTIPWIDTH, 0, pHover->GetToolTipWidth());
-                        m_iLastTooltipWidth = pHover->GetToolTipWidth();
-
-                    }
-                    ::SendMessage(m_hwndTooltip, TTM_SETTOOLINFO, 0, (LPARAM)&m_ToolTip);
-                    ::SendMessage(m_hwndTooltip, TTM_TRACKACTIVATE, TRUE, (LPARAM)&m_ToolTip);
-                }
-                else{
-                    ::SendMessage(m_hwndTooltip, TTM_SETMAXTIPWIDTH, 0, pHover->GetToolTipWidth());
-                    ::SendMessage(m_hwndTooltip, TTM_SETTOOLINFO, 0, (LPARAM)&m_ToolTip);
-                    ::SendMessage(m_hwndTooltip, TTM_TRACKACTIVATE, TRUE, (LPARAM)&m_ToolTip);
+				if( m_hwndTooltip != NULL && m_iTooltipWidth >= 0  ) {
+					m_iTooltipWidth = (int)::SendMessage(m_hwndTooltip, TTM_SETMAXTIPWIDTH, 0, m_iTooltipWidth);
+				}
+				::SendMessage(m_hwndTooltip, TTM_ADDTOOL, 0, (LPARAM) &m_ToolTip);
+            } else {
+                if ( (!IsWindowVisible(m_hwndTooltip) && (m_ptLastToolTip.x != pt.x && m_ptLastToolTip.y != pt.y)) ) {
+					if (pHover->GetToolTipWidth() > 0)
+						::SendMessage(m_hwndTooltip, TTM_SETMAXTIPWIDTH, 0, pHover->GetToolTipWidth());
+					if (pHover->GetToolTipDelayTime() > 0)
+						::SendMessage(m_hwndTooltip, TTM_SETDELAYTIME, 0, pHover->GetToolTipDelayTime());
+                    ::SendMessage(m_hwndTooltip, TTM_SETTOOLINFO, 0, (LPARAM) &m_ToolTip);
+                    ::SendMessage(m_hwndTooltip, TTM_TRACKACTIVATE, TRUE, (LPARAM) &m_ToolTip);
+                    m_ptLastToolTip = pt;
                 }
             }
-            //修改在CListElementUI 有提示 子项无提示下无法跟随移动！（按理说不应该移动的）
-            ::SendMessage(m_hwndTooltip, TTM_TRACKPOSITION, 0, (LPARAM)(DWORD)MAKELONG(pt.x, pt.y));
-    }
+        }
         return true;
     case WM_MOUSELEAVE:
         {
@@ -1609,7 +1594,6 @@ bool CPaintManagerUI::AttachDialog(CControlUI* pControl)
     m_pEventKey = NULL;
     m_pEventHover = NULL;
     m_pEventClick = NULL;
-    m_pLastToolTip = NULL;
     // Remove the existing control-tree. We might have gotten inside this function as
     // a result of an event fired or similar, so we cannot just delete the objects and
     // pull the internal memory of the calling code. We'll delay the cleanup.
@@ -1629,6 +1613,9 @@ bool CPaintManagerUI::AttachDialog(CControlUI* pControl)
     m_bUpdateNeeded = true;
     m_bFirstLayout = true;
     m_bFocusNeeded = true;
+
+    m_shadow.Create(this);
+
     // Initiate all control
     return InitControls(pControl);
 }
@@ -1976,6 +1963,11 @@ bool CPaintManagerUI::RemoveNotifier(INotifyUI* pNotifier)
         }
     }
     return false;
+}
+
+CDuiPtrArray* CPaintManagerUI::GetNotifiers()
+{
+	return &m_aNotifiers;
 }
 
 bool CPaintManagerUI::AddPreMessageFilter(IMessageFilterUI* pFilter)
@@ -2914,45 +2906,51 @@ void CPaintManagerUI::ReloadSharedImages()
 	}
 }
 
-void CPaintManagerUI::ReloadImages()
+void CPaintManagerUI::ReloadImages(LPCTSTR image /*= ""*/)
 {
 	TImageInfo* data;
 	TImageInfo* pNewData;
 	for( int i = 0; i< m_ResInfo.m_ImageHash.GetSize(); i++ ) {
 		if(LPCTSTR bitmap = m_ResInfo.m_ImageHash.GetAt(i)) {
-			data = static_cast<TImageInfo*>(m_ResInfo.m_ImageHash.Find(bitmap));
-			if( data != NULL ) {
-				if( !data->sResType.IsEmpty() ) {
-					if( isdigit(*bitmap) ) {
-						LPTSTR pstr = NULL;
-						int iIndex = _tcstol(bitmap, &pstr, 10);
-						pNewData = CRenderEngine::LoadImage(iIndex, data->sResType.GetData(), data->dwMask);
-					}
-					else {
-						pNewData = CRenderEngine::LoadImage(bitmap, data->sResType.GetData(), data->dwMask);
-					}
-				}
-				else {
-					pNewData = CRenderEngine::LoadImage(bitmap, NULL, data->dwMask);
-				}
-				if( pNewData == NULL ) continue;
+            bool bReload = false;
+            if (_tcslen(image) == 0 || _tcscmp(image, bitmap) == 0)
+                bReload = true;
 
-				CRenderEngine::FreeImage(data, false);
-				data->hBitmap = pNewData->hBitmap;
-				data->pBits = pNewData->pBits;
-				data->nX = pNewData->nX;
-				data->nY = pNewData->nY;
-				data->bAlpha = pNewData->bAlpha;
-				data->pSrcBits = NULL;
-				if( data->bUseHSL ) {
-					data->pSrcBits = new BYTE[data->nX * data->nY * 4];
-					::CopyMemory(data->pSrcBits, data->pBits, data->nX * data->nY * 4);
-				}
-				else data->pSrcBits = NULL;
-				if( m_bUseHSL ) CRenderEngine::AdjustImage(true, data, m_H, m_S, m_L);
+            if (bReload) {
+			    data = static_cast<TImageInfo*>(m_ResInfo.m_ImageHash.Find(bitmap));
+			    if( data != NULL ) {
+				    if( !data->sResType.IsEmpty() ) {
+					    if( isdigit(*bitmap) ) {
+						    LPTSTR pstr = NULL;
+						    int iIndex = _tcstol(bitmap, &pstr, 10);
+						    pNewData = CRenderEngine::LoadImage(iIndex, data->sResType.GetData(), data->dwMask);
+					    }
+					    else {
+						    pNewData = CRenderEngine::LoadImage(bitmap, data->sResType.GetData(), data->dwMask);
+					    }
+				    }
+				    else {
+					    pNewData = CRenderEngine::LoadImage(bitmap, NULL, data->dwMask);
+				    }
+				    if( pNewData == NULL ) continue;
 
-				delete pNewData;
-			}
+				    CRenderEngine::FreeImage(data, false);
+				    data->hBitmap = pNewData->hBitmap;
+				    data->pBits = pNewData->pBits;
+				    data->nX = pNewData->nX;
+				    data->nY = pNewData->nY;
+				    data->bAlpha = pNewData->bAlpha;
+				    data->pSrcBits = NULL;
+				    if( data->bUseHSL ) {
+					    data->pSrcBits = new BYTE[data->nX * data->nY * 4];
+					    ::CopyMemory(data->pSrcBits, data->pBits, data->nX * data->nY * 4);
+				    }
+				    else data->pSrcBits = NULL;
+				    if( m_bUseHSL ) CRenderEngine::AdjustImage(true, data, m_H, m_S, m_L);
+
+				    delete pNewData;
+			    }
+            }
 		}
 	}
     if( m_pRoot ) m_pRoot->Invalidate();
@@ -3170,8 +3168,44 @@ void CPaintManagerUI::SetWindowAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
         LPTSTR pstr = NULL;
         DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
         SetDefaultSelectedBkColor(clrColor);
-    } 
-    else 
+    }
+    else if( _tcscmp(pstrName, _T("shadowsize")) == 0 ) {
+        GetShadow()->SetSize(_ttoi(pstrValue));
+    }
+    else if( _tcscmp(pstrName, _T("shadowsharpness")) == 0 ) {
+        GetShadow()->SetSharpness(_ttoi(pstrValue));
+    }
+    else if( _tcscmp(pstrName, _T("shadowdarkness")) == 0 ) {
+        GetShadow()->SetDarkness(_ttoi(pstrValue));
+    }
+    else if( _tcscmp(pstrName, _T("shadowposition")) == 0 ) {
+        LPTSTR pstr = NULL;
+        int cx = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+        int cy = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr); 
+        GetShadow()->SetPosition(cx, cy);
+    }
+    else if( _tcscmp(pstrName, _T("shadowcolor")) == 0 ) {
+        if( *pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
+        LPTSTR pstr = NULL;
+        DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
+        GetShadow()->SetColor(clrColor);
+    }
+    else if( _tcscmp(pstrName, _T("shadowcorner")) == 0 ) {
+        RECT rcCorner = { 0 };
+        LPTSTR pstr = NULL;
+        rcCorner.left = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+        rcCorner.top = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr);
+        rcCorner.right = _tcstol(pstr + 1, &pstr, 10);  ASSERT(pstr);
+        rcCorner.bottom = _tcstol(pstr + 1, &pstr, 10); ASSERT(pstr);
+        GetShadow()->SetShadowCorner(rcCorner);
+    }
+    else if( _tcscmp(pstrName, _T("shadowimage")) == 0 ) {
+        GetShadow()->SetImage(pstrValue);
+    }
+    else if( _tcscmp(pstrName, _T("showshadow")) == 0 ) {
+        GetShadow()->ShowShadow(_tcscmp(pstrValue, _T("true")) == 0);
+    }
+    else
         AddWindowCustomAttribute(pstrName, pstrValue);
 }
 
@@ -3575,6 +3609,11 @@ bool CPaintManagerUI::RemoveTranslateAccelerator(ITranslateAccelerator *pTransla
 void CPaintManagerUI::UsedVirtualWnd(bool bUsed)
 {
 	m_bUsedVirtualWnd = bUsed;
+}
+
+CShadowUI* CPaintManagerUI::GetShadow()
+{
+    return &m_shadow;
 }
 
 } // namespace DuiLib

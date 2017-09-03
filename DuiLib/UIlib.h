@@ -69,6 +69,7 @@
 #include <stdio.h>
 
 #include "Utils/Utils.h"
+#include "Utils/UIShadow.h"
 #include "Utils/UIDelegate.h"
 #include "Core/UIDefine.h"
 #include "Core/UIManager.h"

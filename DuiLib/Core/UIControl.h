@@ -99,6 +99,8 @@ public:
     virtual void SetToolTip(LPCTSTR pstrText);
 	virtual void SetToolTipWidth(int nWidth);
 	virtual int	  GetToolTipWidth(void);	// 多行ToolTip单行最长宽度
+	virtual void SetToolTipDelayTime(DWORD dwTime);
+	virtual DWORD GetToolTipDelayTime();
 
     // 快捷键
     virtual TCHAR GetShortcut() const;
@@ -135,6 +137,7 @@ public:
 	bool RemoveCustomAttribute(LPCTSTR pstrName);
 	void RemoveAllCustomAttribute();
 
+	CControlUI* FindParentControl(LPCTSTR lpszClassName, LPCTSTR lpszCtrlName);
     virtual CControlUI* FindControl(FINDCONTROLPROC Proc, LPVOID pData, UINT uFlags);
 
     void Invalidate();
@@ -220,6 +223,7 @@ protected:
     bool m_bColorHSL;
 	int m_nBorderStyle;
 	int m_nTooltipWidth;
+	DWORD m_dwTooltipDelayTime;
     SIZE m_cxyBorderRound;
     RECT m_rcPaint;
 	RECT m_rcBorderSize;

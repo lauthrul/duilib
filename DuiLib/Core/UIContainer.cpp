@@ -229,6 +229,15 @@ namespace DuiLib
 		m_bMouseChildEnabled = bEnable;
 	}
 
+	void CContainerUI::SetEnabled(bool bEnable /*= true*/)
+	{
+		if( m_bEnabled == bEnable ) return;
+		CControlUI::SetEnabled(bEnable);
+		for( int it = 0; it < m_items.GetSize(); it++ ) {
+			static_cast<CControlUI*>(m_items[it])->SetEnabled(bEnable);
+		}
+	}
+
 	void CContainerUI::SetVisible(bool bVisible)
 	{
 		if( m_bVisible == bVisible ) return;

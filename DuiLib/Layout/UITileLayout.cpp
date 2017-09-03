@@ -122,7 +122,7 @@ namespace DuiLib
 				m_nColumns = (rc.right - rc.left)/m_szItem.cx;
 				cxNeeded = rc.right - rc.left;
 				if (m_nColumns > 1) {
-					if (iChildPadding <= 0) {
+					if (iChildPadding < 0) {
 						iChildPadding = (cxNeeded-m_nColumns*m_szItem.cx)/(m_nColumns-1);
 					}
 					if (iChildPadding < 0) iChildPadding = 0;
@@ -160,6 +160,7 @@ namespace DuiLib
 			cyNeeded = m_nRows*m_szItem.cy + (m_nRows-1)*m_iChildVPadding;
 		}
 
+		int iShowIndex = -1;
 		for( int it1 = 0; it1 < m_items.GetSize(); it1++ ) {
 			CControlUI* pControl = static_cast<CControlUI*>(m_items[it1]);
 			if( !pControl->IsVisible() ) continue;
@@ -168,6 +169,7 @@ namespace DuiLib
 				continue;
 			}
 
+			iShowIndex++;
 			RECT rcPadding = pControl->GetPadding();
 			SIZE sz = m_szItem;
 			sz.cx -= rcPadding.left + rcPadding.right;
@@ -179,8 +181,8 @@ namespace DuiLib
 
 			UINT iChildAlign = GetChildAlign(); 
 			UINT iChildVAlign = GetChildVAlign();
-			int iColumnIndex = it1/m_nColumns;
-			int iRowIndex = it1%m_nColumns;
+			int iColumnIndex = iShowIndex/m_nColumns;
+			int iRowIndex = iShowIndex%m_nColumns;
 			int iPosX = rc.left + iRowIndex*(m_szItem.cx+iChildPadding);
 			if( m_pHorizontalScrollBar && m_pHorizontalScrollBar->IsVisible() ) {
 				iPosX -= m_pHorizontalScrollBar->GetScrollPos();

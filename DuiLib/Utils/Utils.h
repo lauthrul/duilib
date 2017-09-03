@@ -280,6 +280,25 @@ namespace DuiLib
 		}
 	};
 
+	/////////////////////////////////////////////////////////////////////////////////////
+	//
+
+	class DUILIB_API CDuiColor
+	{
+	public:
+		CDuiColor();
+		CDuiColor(DWORD dwColor);
+		CDuiColor(LPCTSTR lpstrColor);
+		~CDuiColor();
+
+		DWORD GetValue();
+		CDuiString GetString();
+
+	protected:
+		CDuiString m_strText;
+		DWORD m_dwColor;
+	};
+
 }// namespace DuiLib
 
 #endif // __UTILS_H__

@@ -298,7 +298,7 @@ public:
     void RemoveImage(LPCTSTR bitmap, bool bShared = false);
     void RemoveAllImages(bool bShared = false);
 	static void ReloadSharedImages();
-	void ReloadImages();
+	void ReloadImages(LPCTSTR image = "");
 
     void AddDefaultAttributeList(LPCTSTR pStrControlName, LPCTSTR pStrControlAttrList, bool bShared = false);
     LPCTSTR GetDefaultAttributeList(LPCTSTR pStrControlName) const;
@@ -353,7 +353,8 @@ public:
 	void SetPainting(bool bIsPainting);
 
     bool AddNotifier(INotifyUI* pControl);
-    bool RemoveNotifier(INotifyUI* pControl);   
+    bool RemoveNotifier(INotifyUI* pControl); 
+	CDuiPtrArray* GetNotifiers();
     void SendNotify(TNotifyUI& Msg, bool bAsync = false, bool bEnableRepeat = true);
     void SendNotify(CControlUI* pControl, LPCTSTR pstrMessage, WPARAM wParam = 0, LPARAM lParam = 0, bool bAsync = false, bool bEnableRepeat = true);
 
@@ -397,6 +398,8 @@ public:
     bool PreMessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lRes);
 	void UsedVirtualWnd(bool bUsed);
 
+    CShadowUI* GetShadow();
+
 private:
 	CDuiPtrArray* GetFoundControls();
     static CControlUI* CALLBACK __FindControlFromNameHash(CControlUI* pThis, LPVOID pData);
@@ -424,19 +427,19 @@ private:
     HBITMAP m_hbmpBackground;
 	COLORREF* m_pBackgroundBits;
 	int m_iTooltipWidth;
-    int m_iLastTooltipWidth;
 	HWND m_hwndTooltip;
 	TOOLINFO m_ToolTip;
+    POINT m_ptLastToolTip;
 	int m_iHoverTime;
     bool m_bNoActivate;
     bool m_bShowUpdateRect;
+    CShadowUI m_shadow;
     //
     CControlUI* m_pRoot;
     CControlUI* m_pFocus;
     CControlUI* m_pEventHover;
     CControlUI* m_pEventClick;
     CControlUI* m_pEventKey;
-    CControlUI* m_pLastToolTip;
     //
     POINT m_ptLastMousePos;
     SIZE m_szMinWindow;
