@@ -449,6 +449,11 @@ bool CComboUI::SelectItem(int iIndex, bool bTakeFocus, bool bTriggerEvent)
     return true;
 }
 
+bool CComboUI::SelectRange(int iIndex, bool bTakeFocus /*= false*/, bool bTriggerEvent /*= true*/)
+{
+	return false;
+}
+
 bool CComboUI::ExpandItem(int iIndex, bool bExpand)
 {
     return false;

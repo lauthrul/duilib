@@ -32,7 +32,8 @@ public:
     int GetCurSel() const;
 	bool GetSelectCloseFlag();
 	void SetSelectCloseFlag(bool flag);
-    bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent=true);
+    bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true);
+	bool SelectRange(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true);
     bool ExpandItem(int iIndex, bool bExpand = true);
     int GetExpandedItem() const;
 

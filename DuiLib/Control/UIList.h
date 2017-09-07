@@ -42,6 +42,7 @@ typedef struct tagTListInfoUI
     DWORD dwVLineColor;
     bool bShowHtml;
     bool bMultiExpandable;
+	bool bMultiSelect;
 } TListInfoUI;
 
 
@@ -59,7 +60,8 @@ class IListOwnerUI
 public:
     virtual TListInfoUI* GetListInfo() = 0;
     virtual int GetCurSel() const = 0;
-    virtual bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent=true) = 0;
+    virtual bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true) = 0;
+	virtual bool SelectRange(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true) = 0;
     virtual void DoEvent(TEventUI& event) = 0;
     virtual bool ExpandItem(int iIndex, bool bExpand = true) = 0;
     virtual int GetExpandedItem() const = 0;
@@ -84,7 +86,7 @@ public:
     virtual IListOwnerUI* GetOwner() = 0;
     virtual void SetOwner(CControlUI* pOwner) = 0;
     virtual bool IsSelected() const = 0;
-    virtual bool Select(bool bSelect = true, bool bTriggerEvent=true) = 0;
+    virtual bool Select(bool bSelect = true, bool bTriggerEvent = true, bool bCallback = false) = 0;
     virtual bool IsExpanded() const = 0;
     virtual bool Expand(bool bExpand = true) = 0;
     virtual void DrawItemText(HDC hDC, const RECT& rcItem) = 0;
@@ -109,7 +111,11 @@ public:
     bool GetScrollSelect();
     void SetScrollSelect(bool bScrollSelect);
     int GetCurSel() const;
-    bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent=true);
+    bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true);
+	bool SelectRange(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true);
+	
+	bool GetMultiSelect();
+	void SetMultiSelect(bool bMultiSelect);
 
     CControlUI* GetItemAt(int iIndex) const;
     int GetItemIndex(CControlUI* pControl) const;
@@ -325,7 +331,7 @@ public:
     void SetVisible(bool bVisible = true);
 
     bool IsSelected() const;
-    bool Select(bool bSelect = true, bool bTriggerEvent=true);
+    bool Select(bool bSelect = true, bool bTriggerEvent = true, bool bCallback = false);
     bool IsExpanded() const;
     bool Expand(bool bExpand = true);
 
@@ -440,7 +446,7 @@ public:
     void SetEnabled(bool bEnable = true);
 
     bool IsSelected() const;
-    bool Select(bool bSelect = true, bool bTriggerEvent=true);
+    bool Select(bool bSelect = true, bool bTriggerEvent = true, bool bCallback = false);
     bool IsExpandable() const;
     void SetExpandable(bool bExpandable);
     bool IsExpanded() const;

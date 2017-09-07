@@ -58,6 +58,7 @@ CListUI::CListUI() : m_pCallback(NULL), m_bScrollSelect(false), m_iCurSel(-1), m
     m_ListInfo.dwVLineColor = 0xFF3C3C3C;
     m_ListInfo.bShowHtml = false;
     m_ListInfo.bMultiExpandable = false;
+	m_ListInfo.bMultiSelect = false;
     ::ZeroMemory(&m_ListInfo.rcTextPadding, sizeof(m_ListInfo.rcTextPadding));
     ::ZeroMemory(&m_ListInfo.rcColumn, sizeof(m_ListInfo.rcColumn));
 }
@@ -466,19 +467,22 @@ int CListUI::GetCurSel() const
 
 bool CListUI::SelectItem(int iIndex, bool bTakeFocus, bool bTriggerEvent)
 {
-    if( iIndex == m_iCurSel ) return true;
+	int iOldSel = m_iCurSel;
 
-    int iOldSel = m_iCurSel;
-    // We should first unselect the currently selected item
-    if( m_iCurSel >= 0 ) {
-        CControlUI* pControl = GetItemAt(m_iCurSel);
-        if( pControl != NULL) {
-            IListItemUI* pListItem = static_cast<IListItemUI*>(pControl->GetInterface(DUI_CTR_ILISTITEM));
-            if( pListItem != NULL ) pListItem->Select(false, bTriggerEvent);
-        }
+	BOOL bCtrl = (GetKeyState(VK_CONTROL) & 0x8000);
+	if (m_ListInfo.bMultiSelect && bCtrl)
+		return true;
+	
+	// We should first unselect the currently selected item
+	for (int i = 0; i < GetCount(); i++) {
+		CControlUI* pControl = GetItemAt(i);
+		if( pControl != NULL) {
+			IListItemUI* pListItem = static_cast<IListItemUI*>(pControl->GetInterface(DUI_CTR_ILISTITEM));
+			if( pListItem != NULL ) pListItem->Select(false, bTriggerEvent);
+		}
+	}
+	m_iCurSel = -1;
 
-        m_iCurSel = -1;
-    }
     if( iIndex < 0 ) return false;
 
     CControlUI* pControl = GetItemAt(iIndex);
@@ -500,6 +504,61 @@ bool CListUI::SelectItem(int iIndex, bool bTakeFocus, bool bTriggerEvent)
     }
 
     return true;
+}
+
+bool CListUI::SelectRange(int iIndex, bool bTakeFocus /*= false*/, bool bTriggerEvent /*= true*/)
+{
+	int iFirst = m_iCurSel;
+	int iLast = iIndex;
+
+	CControlUI* pControl = GetItemAt(iIndex);
+	if( pControl == NULL ) return false;
+	if( !pControl->IsVisible() ) return false;
+	if( !pControl->IsEnabled() ) return false;
+
+	IListItemUI* pListItem = static_cast<IListItemUI*>(pControl->GetInterface(DUI_CTR_ILISTITEM));
+	if( pListItem == NULL ) return false;
+	if( !pListItem->Select(true, bTriggerEvent) ) {
+		m_iCurSel = -1;
+		return false;
+	}
+	EnsureVisible(m_iCurSel);
+	if( bTakeFocus ) pControl->SetFocus();
+	if( m_pManager != NULL && bTriggerEvent ) {
+		m_pManager->SendNotify(this, DUI_MSGTYPE_ITEMSELECT, iLast, iFirst);
+	}
+
+	int iTemp = 0;
+	if (iFirst > iLast) {
+		iTemp = iFirst;
+		iFirst = iLast;
+		iLast = iTemp;		
+	}
+
+	bool bSelect = false;
+	for (int i = 0; i < GetCount(); i++)
+	{
+		bSelect = (i >= iFirst && i <= iLast);
+		CControlUI * pControl = GetItemAt(i);
+		if (pControl != NULL) {
+			IListItemUI *pListItem = static_cast<IListItemUI *>(pControl->GetInterface(DUI_CTR_ILISTITEM));
+			if (pListItem != NULL)
+				pListItem->Select(bSelect, bTriggerEvent);
+		}
+	}
+
+	return true;
+}
+
+bool CListUI::GetMultiSelect()
+{
+	return m_ListInfo.bMultiSelect;
+}
+
+void CListUI::SetMultiSelect(bool bMultiSelect)
+{
+	m_ListInfo.bMultiSelect = bMultiSelect;
+	NeedUpdate();
 }
 
 TListInfoUI* CListUI::GetListInfo()
@@ -963,6 +1022,7 @@ void CListUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
         SetItemHLineColor(clrColor);
     }
     else if( _tcscmp(pstrName, _T("itemshowhtml")) == 0 ) SetItemShowHtml(_tcscmp(pstrValue, _T("true")) == 0);
+	else if (_tcscmp(pstrName, _T("multiselect")) == 0) SetMultiSelect(_tcscmp(pstrValue, _T("true")) == 0);
     else CVerticalLayoutUI::SetAttribute(pstrName, pstrValue);
 }
 
@@ -2022,15 +2082,22 @@ bool CListElementUI::IsSelected() const
     return m_bSelected;
 }
 
-bool CListElementUI::Select(bool bSelect, bool bTriggerEvent)
+bool CListElementUI::Select(bool bSelect /*= true*/, bool bTriggerEvent /*= true*/, bool bCallback /*= false*/)
 {
-    if( !IsEnabled() ) return false;
-    if( bSelect == m_bSelected ) return true;
-    m_bSelected = bSelect;
-    if( bSelect && m_pOwner != NULL ) m_pOwner->SelectItem(m_iIndex, bTriggerEvent);
-    Invalidate();
+	if( !IsEnabled() ) return false;
+	if( bSelect == m_bSelected ) return true;
+	m_bSelected = bSelect;
+	if(bCallback && m_pOwner != NULL ) {
+		BOOL bShift = (GetKeyState(VK_SHIFT) & 0x8000);
+		if (m_pOwner->GetListInfo()->bMultiSelect && bShift) {
+			m_pOwner->SelectRange(m_iIndex, true, bTriggerEvent);
+		} else {
+			m_pOwner->SelectItem(m_iIndex, true, bTriggerEvent);
+		}
+	}
+	Invalidate();
 
-    return true;
+	return true;
 }
 
 bool CListElementUI::IsExpanded() const
@@ -2078,7 +2145,7 @@ void CListElementUI::DoEvent(TEventUI& event)
 
 void CListElementUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 {
-    if( _tcscmp(pstrName, _T("selected")) == 0 ) Select();
+    if( _tcscmp(pstrName, _T("selected")) == 0 ) Select(true, true, true);
     else CControlUI::SetAttribute(pstrName, pstrValue);
 }
 
@@ -2180,7 +2247,16 @@ void CListLabelElementUI::DoEvent(TEventUI& event)
     {
         if( IsEnabled() ) {
             m_pManager->SendNotify(this, DUI_MSGTYPE_ITEMCLICK);
-            Select();
+			if (m_pOwner->GetListInfo()->bMultiSelect) {
+				BOOL bCtrl = (GetKeyState(VK_CONTROL) & 0x8000);
+				if (bCtrl) {
+					Select(!m_bSelected, true, true);
+				} else {
+					Select(true, true, true);
+				}
+			} else {
+				Select(true, true, true);
+			}
             Invalidate();
         }
         return;
@@ -2189,7 +2265,7 @@ void CListLabelElementUI::DoEvent(TEventUI& event)
 	{
         if( IsEnabled() ) {
             m_pManager->SendNotify(this, DUI_MSGTYPE_ITEMDBCLICK, (WPARAM)m_iIndex, MAKELPARAM(event.ptMouse.x,event.ptMouse.y));
-            Select();
+            Select(true, true, true);
             Invalidate();
         }
         return;
@@ -2778,12 +2854,18 @@ bool CListContainerElementUI::IsSelected() const
     return m_bSelected;
 }
 
-bool CListContainerElementUI::Select(bool bSelect, bool bTriggerEvent)
+bool CListContainerElementUI::Select(bool bSelect /*= true*/, bool bTriggerEvent /*= true*/, bool bCallback /*= false*/)
 {
     if( !IsEnabled() ) return false;
-    if( bSelect == m_bSelected ) return true;
     m_bSelected = bSelect;
-    if( bSelect && m_pOwner != NULL ) m_pOwner->SelectItem(m_iIndex, bTriggerEvent);
+	if(bCallback && m_pOwner != NULL ) {
+		BOOL bShift = (GetKeyState(VK_SHIFT) & 0x8000);
+		if (m_pOwner->GetListInfo()->bMultiSelect && bShift) {
+			m_pOwner->SelectRange(m_iIndex, true, bTriggerEvent);
+		} else {
+			m_pOwner->SelectItem(m_iIndex, true, bTriggerEvent);
+		}
+	}
     Invalidate();
 
     return true;
@@ -2852,7 +2934,16 @@ void CListContainerElementUI::DoEvent(TEventUI& event)
     {
         if( IsEnabled() ) {
             m_pManager->SendNotify(this, DUI_MSGTYPE_ITEMCLICK);
-            Select();
+			if (m_pOwner->GetListInfo()->bMultiSelect) {
+				BOOL bCtrl = (GetKeyState(VK_CONTROL) & 0x8000);
+				if (bCtrl) {
+					Select(!m_bSelected, true, true);
+				} else {
+					Select(true, true, true);
+				}
+			} else {
+				Select(true, true, true);
+			}
             Invalidate();
         }
         return;
@@ -2901,7 +2992,7 @@ void CListContainerElementUI::DoEvent(TEventUI& event)
 
 void CListContainerElementUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 {
-    if( _tcscmp(pstrName, _T("selected")) == 0 ) Select();
+    if( _tcscmp(pstrName, _T("selected")) == 0 ) Select(true, true, true);
     else if( _tcscmp(pstrName, _T("expandable")) == 0 ) SetExpandable(_tcscmp(pstrValue, _T("true")) == 0);
     else CContainerUI::SetAttribute(pstrName, pstrValue);
 }

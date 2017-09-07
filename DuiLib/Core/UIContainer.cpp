@@ -11,6 +11,7 @@ namespace DuiLib
 		: m_iChildPadding(0),
 		m_iChildAlign(DT_LEFT),
 		m_iChildVAlign(DT_TOP),
+        m_uButtonState(0), 
 		m_bAutoDestroy(true),
 		m_bDelayedDestroy(true),
 		m_bMouseChildEnabled(true),
@@ -376,6 +377,33 @@ namespace DuiLib
 				}
 			}
 		}
+        if( event.Type == UIEVENT_MOUSEENTER )
+        {
+            if( ::PtInRect(&m_rcItem, event.ptMouse ) ) {
+                if( IsEnabled() ) {
+                    if( (m_uButtonState & UISTATE_HOT) == 0  ) {
+                        m_uButtonState |= UISTATE_HOT;
+                        Invalidate();
+                    }
+                }
+            }
+        }
+        if( event.Type == UIEVENT_MOUSELEAVE )
+        {
+            if( !::PtInRect(&m_rcItem, event.ptMouse ) ) {
+                if( IsEnabled() ) {
+                    if( (m_uButtonState & UISTATE_HOT) != 0  ) {
+                        m_uButtonState &= ~UISTATE_HOT;
+                        Invalidate();
+                    }
+                }
+                if (m_pManager) m_pManager->RemoveMouseLeaveNeeded(this);
+            }
+            else {
+                if (m_pManager) m_pManager->AddMouseLeaveNeeded(this);
+                return;
+            }
+        }
 		CControlUI::DoEvent(event);
 	}
 
@@ -718,6 +746,10 @@ namespace DuiLib
 			else if( _tcscmp(pstrValue, _T("vcenter")) == 0 ) m_iChildVAlign = DT_VCENTER;
 			else if( _tcscmp(pstrValue, _T("bottom")) == 0 ) m_iChildVAlign = DT_BOTTOM;
 		}
+        else if( _tcscmp(pstrName, _T("normalimage")) == 0 ) SetNormalImage(pstrValue);
+        else if( _tcscmp(pstrName, _T("hotimage")) == 0 ) SetHotImage(pstrValue);
+        else if( _tcscmp(pstrName, _T("focusedimage")) == 0 ) SetFocusedImage(pstrValue);
+        else if( _tcscmp(pstrName, _T("disabledimage")) == 0 ) SetDisabledImage(pstrValue);
 		else CControlUI::SetAttribute(pstrName, pstrValue);
 	}
 
@@ -865,6 +897,78 @@ namespace DuiLib
 		}
         return true;
 	}
+
+    void CContainerUI::PaintStatusImage(HDC hDC)
+    {
+        if( IsFocused() ) m_uButtonState |= UISTATE_FOCUSED;
+        else m_uButtonState &= ~ UISTATE_FOCUSED;
+        if( !IsEnabled() ) m_uButtonState |= UISTATE_DISABLED;
+        else m_uButtonState &= ~ UISTATE_DISABLED;
+
+        if( (m_uButtonState & UISTATE_DISABLED) != 0 ) {
+            if( DrawImage(hDC, m_diDisabled) ) return;
+        }
+        else if( (m_uButtonState & UISTATE_FOCUSED) != 0 ) {
+            if( DrawImage(hDC, m_diFocused) ) return;
+        }
+        else if( (m_uButtonState & UISTATE_HOT) != 0 ) {
+            if( DrawImage(hDC, m_diHot) ) return;
+        }
+
+        if( DrawImage(hDC, m_diNormal) ) return;
+    }
+
+    LPCTSTR CContainerUI::GetNormalImage()
+    {
+        return m_diNormal.sDrawString;
+    }
+
+    void CContainerUI::SetNormalImage(LPCTSTR pStrImage)
+    {
+        if( m_diNormal.sDrawString == pStrImage && m_diNormal.pImageInfo != NULL ) return;
+        m_diNormal.Clear();
+        m_diNormal.sDrawString = pStrImage;
+        Invalidate();
+    }
+
+    LPCTSTR CContainerUI::GetHotImage()
+    {
+        return m_diHot.sDrawString;	
+    }
+
+    void CContainerUI::SetHotImage(LPCTSTR pStrImage)
+    {
+        if( m_diHot.sDrawString == pStrImage && m_diHot.pImageInfo != NULL ) return;
+        m_diHot.Clear();
+        m_diHot.sDrawString = pStrImage;
+        Invalidate();
+    }
+
+    LPCTSTR CContainerUI::GetFocusedImage()
+    {
+        return m_diFocused.sDrawString;	
+    }
+
+    void CContainerUI::SetFocusedImage(LPCTSTR pStrImage)
+    {
+        if( m_diFocused.sDrawString == pStrImage && m_diFocused.pImageInfo != NULL ) return;
+        m_diFocused.Clear();
+        m_diFocused.sDrawString = pStrImage;
+        Invalidate();
+    }
+
+    LPCTSTR CContainerUI::GetDisabledImage()
+    {
+        return m_diDisabled.sDrawString;	
+    }
+
+    void CContainerUI::SetDisabledImage(LPCTSTR pStrImage)
+    {
+        if( m_diDisabled.sDrawString == pStrImage && m_diDisabled.pImageInfo != NULL ) return;
+        m_diDisabled.Clear();
+        m_diDisabled.sDrawString = pStrImage;
+        Invalidate();
+    }
 
 	void CContainerUI::SetFloatPos(int iIndex)
 	{

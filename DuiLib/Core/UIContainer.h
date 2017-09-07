@@ -75,6 +75,16 @@ public:
 	void SetPos(RECT rc, bool bNeedInvalidate = true);
 	void Move(SIZE szOffset, bool bNeedInvalidate = true);
     bool DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl);
+    void PaintStatusImage(HDC hDC);
+
+    LPCTSTR GetNormalImage();
+    void SetNormalImage(LPCTSTR pStrImage);
+    LPCTSTR GetHotImage();
+    void SetHotImage(LPCTSTR pStrImage);
+    LPCTSTR GetFocusedImage();
+    void SetFocusedImage(LPCTSTR pStrImage);
+    LPCTSTR GetDisabledImage();
+    void SetDisabledImage(LPCTSTR pStrImage);
 
     void SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue);
 
@@ -121,6 +131,7 @@ protected:
     int m_iChildPadding;
 	UINT m_iChildAlign;
 	UINT m_iChildVAlign;
+    UINT m_uButtonState;
     bool m_bAutoDestroy;
     bool m_bDelayedDestroy;
     bool m_bMouseChildEnabled;
@@ -128,6 +139,11 @@ protected:
 
     CScrollBarUI* m_pVerticalScrollBar;
     CScrollBarUI* m_pHorizontalScrollBar;
+
+    TDrawInfo m_diNormal;
+    TDrawInfo m_diHot;
+    TDrawInfo m_diFocused;
+    TDrawInfo m_diDisabled;
 };
 
 } // namespace DuiLib

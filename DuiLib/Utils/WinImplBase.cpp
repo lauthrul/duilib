@@ -167,20 +167,22 @@ LRESULT WindowImplBase::OnNcHitTest(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 	if( pt.x >= rcClient.left + rcCaption.left && pt.x < rcClient.right - rcCaption.right \
 		&& pt.y >= rcCaption.top && pt.y < rcCaption.bottom ) {
 			CControlUI* pControl = static_cast<CControlUI*>(m_PaintManager.FindControl(pt));
-			if( pControl && /*_tcsicmp(pControl->GetClass(), DUI_CTR_BUTTON) != 0 && 
-				_tcsicmp(pControl->GetClass(), DUI_CTR_OPTION) != 0 &&
-				_tcsicmp(pControl->GetClass(), DUI_CTR_TEXT) != 0*/
-				_tcsicmp(pControl->GetClass(), DUI_CTR_LABEL) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_TEXT) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_GIFANIM) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_PROGRESS) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_CONTAINER) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_TABLAYOUT) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_TILELAYOUT) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_CHILDLAYOUT) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_VERTICALLAYOUT) == 0
-				|| _tcsicmp(pControl->GetClass(), DUI_CTR_HORIZONTALLAYOUT) == 0)
-				return HTCAPTION;
+			if(pControl != NULL)
+			{
+				if (_tcsicmp(pControl->GetClass(), DUI_CTR_LABEL) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_TEXT) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_GIFANIM) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_PROGRESS) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_CONTAINER) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_TABLAYOUT) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_TILELAYOUT) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_CHILDLAYOUT) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_VERTICALLAYOUT) == 0
+					|| _tcsicmp(pControl->GetClass(), DUI_CTR_HORIZONTALLAYOUT) == 0)
+				{
+					return HTCAPTION;
+				}
+			}
 	}
 
 	return HTCLIENT;

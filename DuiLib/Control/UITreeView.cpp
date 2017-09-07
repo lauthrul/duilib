@@ -197,7 +197,7 @@ namespace DuiLib
 	// 参数信息: bool bSelect
 	// 函数说明: 
 	//************************************
-	bool CTreeNodeUI::Select( bool bSelect /*= true*/,  bool bTriggerEvent)
+	bool CTreeNodeUI::Select( bool bSelect /*= true*/, bool bTriggerEvent /*= true*/, bool bCallback /*= false*/)
 	{
 		bool nRet = CListContainerElementUI::Select(bSelect, bTriggerEvent);
 		if(m_bSelected)
