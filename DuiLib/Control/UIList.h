@@ -111,6 +111,8 @@ public:
     bool GetScrollSelect();
     void SetScrollSelect(bool bScrollSelect);
     int GetCurSel() const;
+	int GetNextSel();
+	int GetSelectedCount() const;
     bool SelectItem(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true);
 	bool SelectRange(int iIndex, bool bTakeFocus = false, bool bTriggerEvent = true);
 	
@@ -218,6 +220,7 @@ public:
 protected:
     bool m_bScrollSelect;
     int m_iCurSel;
+	int m_iNextSel;
     int m_iExpandedItem;
     IListCallbackUI* m_pCallback;
     CListBodyUI* m_pList;

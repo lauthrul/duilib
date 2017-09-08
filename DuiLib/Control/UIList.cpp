@@ -31,7 +31,7 @@ protected:
 //
 //
 
-CListUI::CListUI() : m_pCallback(NULL), m_bScrollSelect(false), m_iCurSel(-1), m_iExpandedItem(-1)
+CListUI::CListUI() : m_pCallback(NULL), m_bScrollSelect(false), m_iCurSel(-1), m_iNextSel(-1), m_iExpandedItem(-1)
 {
     m_pList = new CListBodyUI(this);
     m_pHeader = new CListHeaderUI;
@@ -463,6 +463,40 @@ void CListUI::SetScrollSelect(bool bScrollSelect)
 int CListUI::GetCurSel() const
 {
     return m_iCurSel;
+}
+
+int CListUI::GetNextSel()
+{
+	int i = m_iNextSel + 1;
+	int nCount = GetCount();
+	for (; i < nCount; i++) {
+		CControlUI* pControl = GetItemAt(i);
+		if( pControl != NULL) {
+			IListItemUI* pListItem = static_cast<IListItemUI*>(pControl->GetInterface(DUI_CTR_ILISTITEM));
+			if( pListItem != NULL && pListItem->IsSelected() ) {
+				m_iNextSel = i;
+				break;
+			}
+		}
+	}
+	if (i >= nCount) {
+		m_iNextSel = -1;
+	}
+	return m_iNextSel;
+}
+
+int CListUI::GetSelectedCount() const
+{
+	int nCount = 0;
+	for (int i = 0; i < GetCount(); i++) {
+		CControlUI* pControl = GetItemAt(i);
+		if( pControl != NULL) {
+			IListItemUI* pListItem = static_cast<IListItemUI*>(pControl->GetInterface(DUI_CTR_ILISTITEM));
+			if( pListItem != NULL && pListItem->IsSelected() )
+				nCount++;
+		}
+	}
+	return nCount;
 }
 
 bool CListUI::SelectItem(int iIndex, bool bTakeFocus, bool bTriggerEvent)
