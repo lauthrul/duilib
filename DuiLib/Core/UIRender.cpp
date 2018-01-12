@@ -383,7 +383,7 @@ TImageInfo* CRenderEngine::LoadImage(STRINGorID bitmap, LPCTSTR type, DWORD mask
 			}
 		}
 		else if (_tcscmp(type, RES_TYPE_COLOR) == 0) {
-			pData = (PBYTE)0x1;  /* dummy pointer */
+			pData = (PBYTE)bitmap.m_lpstr;
 		}
 		else {
 			HRSRC hResource = ::FindResource(CPaintManagerUI::GetResourceDll(), bitmap.m_lpstr, type);
@@ -425,85 +425,98 @@ TImageInfo* CRenderEngine::LoadImage(STRINGorID bitmap, LPCTSTR type, DWORD mask
 		}
 		break;
 	}
-	if (!pData)
-	{
+
+	TImageInfo* pImage = LoadImage(pData, dwSize, type, mask);
+
+	if (!type || _tcscmp(type, RES_TYPE_COLOR) != 0) {
+		if (pData != NULL) {
+			delete[] pData;
+		}
+	}
+
+	return pImage;
+}
+
+TImageInfo* CRenderEngine::LoadImage(LPBYTE pData, DWORD dwSize, LPCTSTR type, DWORD mask /*= 0*/)
+{
+	if (!pData) {
 		//::MessageBox(0, _T("¶ÁÈ¡Í¼Æ¬Êý¾ÝÊ§°Ü£¡"), _T("×¥BUG"), MB_OK);
 		return NULL;
 	}
 
-    LPBYTE pImage = NULL;
-    int x = 1, y = 1, n;
-    if (!type || _tcscmp(type, RES_TYPE_COLOR) != 0) {
-        pImage = stbi_load_from_memory(pData, dwSize, &x, &y, &n, 4);
-        delete[] pData;
-        if( !pImage ) {
-            //::MessageBox(0, _T("½âÎöÍ¼Æ¬Ê§°Ü"), _T("×¥BUG"), MB_OK);
-            return NULL;
-        }
-    }
-    BITMAPINFO bmi;
-    ::ZeroMemory(&bmi, sizeof(BITMAPINFO));
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = x;
-    bmi.bmiHeader.biHeight = -y;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-    bmi.bmiHeader.biSizeImage = x * y * 4;
+	LPBYTE pImage = NULL;
+	int x = 1, y = 1, n;
+	if (!type || _tcscmp(type, RES_TYPE_COLOR) != 0) {
+		pImage = stbi_load_from_memory(pData, dwSize, &x, &y, &n, 4);
+		if( !pImage ) {
+			//::MessageBox(0, _T("½âÎöÍ¼Æ¬Ê§°Ü"), _T("×¥BUG"), MB_OK);
+			return NULL;
+		}
+	}
 
-    bool bAlphaChannel = false;
-    LPBYTE pDest = NULL;
-    HBITMAP hBitmap = ::CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void**)&pDest, NULL, 0);
+	BITMAPINFO bmi;
+	::ZeroMemory(&bmi, sizeof(BITMAPINFO));
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = x;
+	bmi.bmiHeader.biHeight = -y;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+	bmi.bmiHeader.biSizeImage = x * y * 4;
+
+	bool bAlphaChannel = false;
+	LPBYTE pDest = NULL;
+	HBITMAP hBitmap = ::CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void**)&pDest, NULL, 0);
 	if( !hBitmap ) {
 		//::MessageBox(0, _T("CreateDIBSectionÊ§°Ü"), _T("×¥BUG"), MB_OK);
 		return NULL;
 	}
 
-    BYTE bColorBits[4] = { 0 };
-    if (type && _tcscmp(type, RES_TYPE_COLOR) == 0) {
-        LPTSTR pstr = NULL;
-        LPCTSTR pstrValue = bitmap.m_lpstr;
-        if (*pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
-        DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
+	BYTE bColorBits[4] = { 0 };
+	if (type && _tcscmp(type, RES_TYPE_COLOR) == 0) {
+		LPTSTR pstr = NULL;
+		LPCTSTR pstrValue = (LPCTSTR)pData;
+		if (*pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
+		DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
 
-        pImage = (LPBYTE)&clrColor;
-        /* BGRA -> RGBA */
-        bColorBits[3] = pImage[3];
-        bColorBits[2] = pImage[0];
-        bColorBits[1] = pImage[1];
-        bColorBits[0] = pImage[2];
-        pImage = bColorBits;
-    }
+		pImage = (LPBYTE)&clrColor;
+		/* BGRA -> RGBA */
+		bColorBits[3] = pImage[3];
+		bColorBits[2] = pImage[0];
+		bColorBits[1] = pImage[1];
+		bColorBits[0] = pImage[2];
+		pImage = bColorBits;
+	}
 
-    for( int i = 0; i < x * y; i++ ) 
-    {
-        pDest[i*4 + 3] = pImage[i*4 + 3];
-        if( pDest[i*4 + 3] < 255 )
-        {
-            pDest[i*4] = (BYTE)(DWORD(pImage[i*4 + 2])*pImage[i*4 + 3]/255);
-            pDest[i*4 + 1] = (BYTE)(DWORD(pImage[i*4 + 1])*pImage[i*4 + 3]/255);
-            pDest[i*4 + 2] = (BYTE)(DWORD(pImage[i*4])*pImage[i*4 + 3]/255); 
-            bAlphaChannel = true;
-        }
-        else
-        {
-            pDest[i*4] = pImage[i*4 + 2];
-            pDest[i*4 + 1] = pImage[i*4 + 1];
-            pDest[i*4 + 2] = pImage[i*4]; 
-        }
+	for( int i = 0; i < x * y; i++ ) 
+	{
+		pDest[i*4 + 3] = pImage[i*4 + 3];
+		if( pDest[i*4 + 3] < 255 )
+		{
+			pDest[i*4] = (BYTE)(DWORD(pImage[i*4 + 2])*pImage[i*4 + 3]/255);
+			pDest[i*4 + 1] = (BYTE)(DWORD(pImage[i*4 + 1])*pImage[i*4 + 3]/255);
+			pDest[i*4 + 2] = (BYTE)(DWORD(pImage[i*4])*pImage[i*4 + 3]/255); 
+			bAlphaChannel = true;
+		}
+		else
+		{
+			pDest[i*4] = pImage[i*4 + 2];
+			pDest[i*4 + 1] = pImage[i*4 + 1];
+			pDest[i*4 + 2] = pImage[i*4]; 
+		}
 
-        if( *(DWORD*)(&pDest[i*4]) == mask ) {
-            pDest[i*4] = (BYTE)0;
-            pDest[i*4 + 1] = (BYTE)0;
-            pDest[i*4 + 2] = (BYTE)0; 
-            pDest[i*4 + 3] = (BYTE)0;
-            bAlphaChannel = true;
-        }
-    }
+		if( *(DWORD*)(&pDest[i*4]) == mask ) {
+			pDest[i*4] = (BYTE)0;
+			pDest[i*4 + 1] = (BYTE)0;
+			pDest[i*4 + 2] = (BYTE)0; 
+			pDest[i*4 + 3] = (BYTE)0;
+			bAlphaChannel = true;
+		}
+	}
 
-    if (!type || _tcscmp(type, RES_TYPE_COLOR) != 0) {
-        stbi_image_free(pImage);
-    }
+	if (!type || _tcscmp(type, RES_TYPE_COLOR) != 0) {
+		stbi_image_free(pImage);
+	}
 
 	TImageInfo* data = new TImageInfo;
 	data->hBitmap = hBitmap;

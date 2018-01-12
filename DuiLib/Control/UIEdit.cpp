@@ -245,7 +245,7 @@ namespace DuiLib
 
 	CEditUI::CEditUI() : m_pWindow(NULL), m_uMaxChar(255), m_bReadOnly(false), 
 		m_bPasswordMode(false), m_cPasswordChar(_T('*')), m_bAutoSelAll(false), m_uButtonState(0), 
-		m_dwEditbkColor(0xFFFFFFFF), m_iWindowStyls(0), m_dwTipInfoColor(0xFFBAC0C5), m_sTipInfo("")
+		m_dwEditbkColor(0xFFFFFFFF), m_iWindowStyls(0), m_dwTipInfoColor(0xFFBAC0C5), m_sTipInfo(_T(""))
 	{
 		SetTextPadding(CDuiRect(4, 3, 4, 3));
 		SetBkColor(0xFFFFFFFF);

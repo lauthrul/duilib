@@ -2857,7 +2857,7 @@ void CPaintManagerUI::AdjustImagesHSL()
 
 void CPaintManagerUI::PostAsyncNotify()
 {
-	if (!m_bAsyncNotifyPosted) {
+	/*if (!m_bAsyncNotifyPosted)*/ {
 		::PostMessage(m_hWndPaint, WM_APP + 1, 0, 0L);
 		m_bAsyncNotifyPosted = true;
 	}

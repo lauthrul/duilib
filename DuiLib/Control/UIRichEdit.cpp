@@ -1077,7 +1077,7 @@ void CTxtWinHost::SetParaFormat(PARAFORMAT2 &p)
 
 CRichEditUI::CRichEditUI() : m_pTwh(NULL), m_bVScrollBarFixing(false), m_bWantTab(true), m_bWantReturn(true), 
     m_bWantCtrlReturn(true), m_bTransparent(true), m_bRich(true), m_bReadOnly(false), m_bWordWrap(false), m_dwTextColor(0), m_iFont(-1), 
-	m_iLimitText(cInitTextMax), m_lTwhStyle(ES_MULTILINE), m_bDrawCaret(true), m_bInited(false),m_dwTipInfoColor(0xFFBAC0C5),m_sTipInfo("")
+	m_iLimitText(cInitTextMax), m_lTwhStyle(ES_MULTILINE), m_bDrawCaret(true), m_bInited(false),m_dwTipInfoColor(0xFFBAC0C5),m_sTipInfo(_T(""))
 {
 	::ZeroMemory(&m_rcTextPadding, sizeof(m_rcTextPadding));
 }

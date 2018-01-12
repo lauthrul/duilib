@@ -24,6 +24,7 @@ m_dwBackColor2(0),
 m_dwBackColor3(0),
 m_dwBorderColor(0),
 m_dwFocusBorderColor(0),
+m_bGrandientVertical(false),
 m_bColorHSL(false),
 m_nBorderStyle(PS_SOLID),
 m_nTooltipWidth(300),
@@ -188,6 +189,16 @@ void CControlUI::SetBkColor3(DWORD dwBackColor)
     Invalidate();
 }
 
+bool CControlUI::GetGrandientVertical()
+{
+	return m_bGrandientVertical;
+}
+void CControlUI::SetGrandientVertical(bool bVertical)
+{
+	if( m_bGrandientVertical == bVertical ) return;
+	m_bGrandientVertical = bVertical;
+	Invalidate();
+}
 LPCTSTR CControlUI::GetBkImage()
 {
     return m_diBk.sDrawString;
@@ -753,13 +764,13 @@ CControlUI* CControlUI::FindParentControl(LPCTSTR lpszClassName, LPCTSTR lpszCtr
 	do {
 		pParent = pParent->GetParent();
 		if (pParent != NULL) {
-			if (lpszClassName != NULL && strcmp(pParent->GetClass(), lpszClassName) != 0) {
+			if (lpszClassName != NULL && _tcscmp(pParent->GetClass(), lpszClassName) != 0) {
 				bFind = false;
 			} else {
 				bFind = true;
 			}
 
-			if (lpszCtrlName != NULL && strcmp(pParent->GetName(), lpszCtrlName) != 0) {
+			if (lpszCtrlName != NULL && _tcscmp(pParent->GetName(), lpszCtrlName) != 0) {
 				bFind &= false;
 			} else {
 				bFind &= true;
@@ -972,6 +983,9 @@ void CControlUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
         DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
         SetBkColor3(clrColor);
     }
+	else if( _tcscmp(pstrName, _T("grandientdirection")) == 0 ) {
+		SetGrandientVertical (_tcscmp(pstrValue, _T("vertical")) == 0);
+    }
     else if( _tcscmp(pstrName, _T("bordercolor")) == 0 ) {
         if( *pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
         LPTSTR pstr = NULL;
@@ -1133,13 +1147,13 @@ void CControlUI::PaintBkColor(HDC hDC)
             if( m_dwBackColor3 != 0 ) {
                 RECT rc = m_rcItem;
                 rc.bottom = (rc.bottom + rc.top) / 2;
-                CRenderEngine::DrawGradient(hDC, rc, GetAdjustColor(m_dwBackColor), GetAdjustColor(m_dwBackColor2), true, 8);
+                CRenderEngine::DrawGradient(hDC, rc, GetAdjustColor(m_dwBackColor), GetAdjustColor(m_dwBackColor2), m_bGrandientVertical, 8);
                 rc.top = rc.bottom;
                 rc.bottom = m_rcItem.bottom;
-                CRenderEngine::DrawGradient(hDC, rc, GetAdjustColor(m_dwBackColor2), GetAdjustColor(m_dwBackColor3), true, 8);
+                CRenderEngine::DrawGradient(hDC, rc, GetAdjustColor(m_dwBackColor2), GetAdjustColor(m_dwBackColor3), m_bGrandientVertical, 8);
             }
             else 
-                CRenderEngine::DrawGradient(hDC, m_rcItem, GetAdjustColor(m_dwBackColor), GetAdjustColor(m_dwBackColor2), true, 16);
+                CRenderEngine::DrawGradient(hDC, m_rcItem, GetAdjustColor(m_dwBackColor), GetAdjustColor(m_dwBackColor2), m_bGrandientVertical, 16);
         }
         else if( m_dwBackColor >= 0xFF000000 ) CRenderEngine::DrawColor(hDC, m_rcPaint, GetAdjustColor(m_dwBackColor));
         else CRenderEngine::DrawColor(hDC, m_rcItem, GetAdjustColor(m_dwBackColor));
@@ -1200,7 +1214,8 @@ void CControlUI::PaintBorder(HDC hDC)
 				}
 				if(m_rcBorderSize.right > 0) {
 					rcBorder		= m_rcItem;
-					rcBorder.left	= rcBorder.right;
+					rcBorder.left	= rcBorder.right - m_rcBorderSize.right;
+					rcBorder.right	= rcBorder.left;
 					if (IsFocused() && m_dwFocusBorderColor != 0)
 						CRenderEngine::DrawLine(hDC,rcBorder,m_rcBorderSize.right,GetAdjustColor(m_dwFocusBorderColor),m_nBorderStyle);
 					else
@@ -1208,7 +1223,8 @@ void CControlUI::PaintBorder(HDC hDC)
 				}
 				if(m_rcBorderSize.bottom > 0) {
 					rcBorder		= m_rcItem;
-					rcBorder.top	= rcBorder.bottom;
+					rcBorder.top	= rcBorder.bottom - m_rcBorderSize.bottom;
+					rcBorder.bottom	= rcBorder.top;
 					if (IsFocused() && m_dwFocusBorderColor != 0)
 						CRenderEngine::DrawLine(hDC,rcBorder,m_rcBorderSize.bottom,GetAdjustColor(m_dwFocusBorderColor),m_nBorderStyle);
 					else

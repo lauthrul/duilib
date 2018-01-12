@@ -298,7 +298,7 @@ public:
     void RemoveImage(LPCTSTR bitmap, bool bShared = false);
     void RemoveAllImages(bool bShared = false);
 	static void ReloadSharedImages();
-	void ReloadImages(LPCTSTR image = "");
+	void ReloadImages(LPCTSTR image = _T(""));
 
     void AddDefaultAttributeList(LPCTSTR pStrControlName, LPCTSTR pStrControlAttrList, bool bShared = false);
     LPCTSTR GetDefaultAttributeList(LPCTSTR pStrControlName) const;

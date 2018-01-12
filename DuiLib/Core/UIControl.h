@@ -45,6 +45,8 @@ public:
     void SetBkColor2(DWORD dwBackColor);
     DWORD GetBkColor3() const;
     void SetBkColor3(DWORD dwBackColor);
+	bool GetGrandientVertical();
+	void SetGrandientVertical(bool bVertical);
     LPCTSTR GetBkImage();
     void SetBkImage(LPCTSTR pStrImage);
 	DWORD GetFocusBorderColor() const;
@@ -216,6 +218,7 @@ protected:
     DWORD m_dwBackColor;
     DWORD m_dwBackColor2;
     DWORD m_dwBackColor3;
+	bool m_bGrandientVertical;
     TDrawInfo m_diBk;
 	TDrawInfo m_diFore;
     DWORD m_dwBorderColor;

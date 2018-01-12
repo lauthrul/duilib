@@ -35,7 +35,7 @@ LRESULT WindowImplBase::ResponseDefaultKeyEvent(WPARAM wParam)
 
 void WindowImplBase::SetTitle(LPCTSTR pstrTitle)
 {
-    CControlUI *pCtrl = m_PaintManager.FindControl("title");
+    CControlUI *pCtrl = m_PaintManager.FindControl(_T("title"));
     if (pCtrl) pCtrl->SetText(pstrTitle);
 }
 
@@ -226,6 +226,12 @@ LRESULT WindowImplBase::OnMouseHover(UINT uMsg, WPARAM wParam, LPARAM lParam, BO
 }
 #endif
 
+LRESULT WindowImplBase::OnMove(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	bHandled = FALSE;
+	return 0;
+}
+
 LRESULT WindowImplBase::OnSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 	SIZE szRoundCorner = m_PaintManager.GetRoundCorner();
@@ -414,8 +420,9 @@ LRESULT WindowImplBase::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_GETMINMAXINFO:	lRes = OnGetMinMaxInfo(uMsg, wParam, lParam, bHandled); break;
 	case WM_MOUSEWHEEL:		lRes = OnMouseWheel(uMsg, wParam, lParam, bHandled); break;
 #endif
+	case WM_MOVE:			lRes = OnMove(uMsg, wParam, lParam, bHandled); break;
 	case WM_SIZE:			lRes = OnSize(uMsg, wParam, lParam, bHandled); break;
-	case WM_CHAR:		lRes = OnChar(uMsg, wParam, lParam, bHandled); break;
+	case WM_CHAR:			lRes = OnChar(uMsg, wParam, lParam, bHandled); break;
 	case WM_SYSCOMMAND:		lRes = OnSysCommand(uMsg, wParam, lParam, bHandled); break;
 	case WM_KEYDOWN:		lRes = OnKeyDown(uMsg, wParam, lParam, bHandled); break;
 	case WM_KILLFOCUS:		lRes = OnKillFocus(uMsg, wParam, lParam, bHandled); break;
@@ -423,7 +430,7 @@ LRESULT WindowImplBase::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONUP:		lRes = OnLButtonUp(uMsg, wParam, lParam, bHandled); break;
 	case WM_LBUTTONDOWN:	lRes = OnLButtonDown(uMsg, wParam, lParam, bHandled); break;
 	case WM_MOUSEMOVE:		lRes = OnMouseMove(uMsg, wParam, lParam, bHandled); break;
-	case WM_MOUSEHOVER:	lRes = OnMouseHover(uMsg, wParam, lParam, bHandled); break;
+	case WM_MOUSEHOVER:		lRes = OnMouseHover(uMsg, wParam, lParam, bHandled); break;
 	default:				bHandled = FALSE; break;
 	}
 	if (bHandled) return lRes;
