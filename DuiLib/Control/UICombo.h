@@ -28,6 +28,10 @@ public:
     void SetDropBoxAttributeList(LPCTSTR pstrList);
     SIZE GetDropBoxSize() const;
     void SetDropBoxSize(SIZE szDropBox);
+	SIZE GetDropBoxRoundCorner() const;
+	void SetDropBoxRoundCorner(int cx, int cy);
+	POINT GetDropBoxOffset() const;
+	void SetDropBoxOfsset(int x, int y);
 
     int GetCurSel() const;
 	bool GetSelectCloseFlag();
@@ -119,6 +123,8 @@ public:
     void PaintText(HDC hDC);
     void PaintStatusImage(HDC hDC);
 
+	CShadowUI* GetShadow();
+
 protected:
     CComboWnd* m_pWindow;
 
@@ -128,6 +134,8 @@ protected:
     RECT m_rcTextPadding;
     CDuiString m_sDropBoxAttributes;
     SIZE m_szDropBox;
+	SIZE m_szRoundCorner;
+	POINT m_ptDropBoxOffset;
     UINT m_uButtonState;
 
 	TDrawInfo m_diNormal;
@@ -137,6 +145,8 @@ protected:
     TDrawInfo m_diDisabled;
 
     TListInfoUI m_ListInfo;
+
+	CShadowUI m_shadow;
 };
 
 } // namespace DuiLib

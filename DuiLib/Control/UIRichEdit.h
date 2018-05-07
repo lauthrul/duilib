@@ -2,6 +2,9 @@
 #define __UIRICHEDIT_H__
 
 #pragma once
+#include <textserv.h>
+#include <richedit.h>
+#include <richole.h>
 
 namespace DuiLib {
 
@@ -133,6 +136,12 @@ public:
 	LPCTSTR GetTipValue();
 	void SetTipInfoColor(DWORD clrColor);
 	DWORD GetTipValueColor();
+
+	ITextHost * GetTextHost();
+	ITextServices * GetTextServices();
+	BOOL SetOleCallback(IRichEditOleCallback* pCallback);
+	BOOL CanPaste(UINT nFormat = 0);
+	void PasteSpecial(UINT uClipFormat, DWORD dwAspect = 0, HMETAFILE hMF = 0);
 
 protected:
 	enum { 

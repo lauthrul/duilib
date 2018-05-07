@@ -291,6 +291,8 @@ namespace DuiLib
 		CDuiColor(LPCTSTR lpstrColor);
 		~CDuiColor();
 
+		bool operator == (const CDuiColor& lh);
+
 		DWORD GetValue();
 		CDuiString GetString();
 

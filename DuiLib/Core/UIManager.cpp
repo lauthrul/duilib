@@ -1069,6 +1069,8 @@ bool CPaintManagerUI::MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, LR
 			SetPainting(false);
 			m_bLayeredChanged = false;
 			if( m_bUpdateNeeded ) Invalidate();
+
+			SendNotify(m_pRoot, DUI_MSGTYPE_PAINT, (WPARAM)&rcPaint, 0);
         }
         return true;
     case WM_PRINTCLIENT:
@@ -3413,6 +3415,30 @@ CControlUI* CPaintManagerUI::FindSubControlByName(CControlUI* pParent, LPCTSTR p
     return pParent->FindControl(__FindControlFromName, (LPVOID)pstrName, UIFIND_ALL);
 }
 
+CDuiPtrArray* CPaintManagerUI::FindSubControlsByName(CControlUI* pParent, LPCTSTR pstrName)
+{
+	if( pParent == NULL ) pParent = GetRoot();
+	ASSERT(pParent);
+	m_aFoundControls.Empty();
+	pParent->FindControl(__FindControlsFromName, (LPVOID)pstrName, UIFIND_ALL);
+	return &m_aFoundControls;
+}
+CControlUI* CPaintManagerUI::FindSubControlByCustomAttr(CControlUI* pParent, LPCTSTR pstrAttr) const
+{
+	if( pParent == NULL ) pParent = GetRoot();
+	ASSERT(pParent);
+	return pParent->FindControl(__FindControlFromCustomAttr, (LPVOID)pstrAttr, UIFIND_ALL);
+}
+
+CDuiPtrArray* CPaintManagerUI::FindSubControlsByCustomAttr(CControlUI* pParent, LPCTSTR pstrAttr)
+{
+	if( pParent == NULL ) pParent = GetRoot();
+	ASSERT(pParent);
+	m_aFoundControls.Empty();
+	pParent->FindControl(__FindControlsFromCustomAttr, (LPVOID)pstrAttr, UIFIND_ALL);
+	return &m_aFoundControls;
+}
+
 CControlUI* CPaintManagerUI::FindSubControlByClass(CControlUI* pParent, LPCTSTR pstrClass, int iIndex)
 {
     if( pParent == NULL ) pParent = GetRoot();
@@ -3487,6 +3513,31 @@ CControlUI* CALLBACK CPaintManagerUI::__FindControlFromName(CControlUI* pThis, L
     const CDuiString& sName = pThis->GetName();
     if( sName.IsEmpty() ) return NULL;
     return (_tcsicmp(sName, pstrName) == 0) ? pThis : NULL;
+}
+
+CControlUI* CALLBACK CPaintManagerUI::__FindControlsFromName(CControlUI* pThis, LPVOID pData)
+{
+	LPCTSTR pstrName = static_cast<LPCTSTR>(pData);
+	LPCTSTR pName = pThis->GetName();
+	if( _tcscmp(pstrName, pName) == 0 ) 
+		pThis->GetManager()->GetFoundControls()->Add((LPVOID)pThis);
+	return NULL;
+}
+
+CControlUI* CALLBACK CPaintManagerUI::__FindControlFromCustomAttr(CControlUI* pThis, LPVOID pData)
+{
+	LPCTSTR pstrCustomAttr = static_cast<LPCTSTR>(pData);
+	if( pThis->GetCustomAttribute(pstrCustomAttr) == NULL )
+		return NULL;
+	return pThis;
+}
+
+CControlUI* CALLBACK CPaintManagerUI::__FindControlsFromCustomAttr(CControlUI* pThis, LPVOID pData)
+{
+	LPCTSTR pstrCustomAttr = static_cast<LPCTSTR>(pData);
+	if( pThis->GetCustomAttribute(pstrCustomAttr) != NULL ) 
+		pThis->GetManager()->GetFoundControls()->Add((LPVOID)pThis);
+	return NULL;
 }
 
 CControlUI* CALLBACK CPaintManagerUI::__FindControlFromClass(CControlUI* pThis, LPVOID pData)

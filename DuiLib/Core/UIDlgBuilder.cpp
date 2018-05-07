@@ -212,7 +212,6 @@ CControlUI* CDialogBuilder::_Parse(CMarkupNode* pRoot, CControlUI* pParent, CPai
             SIZE_T cchLen = lengthof(szValue) - 1;
             if ( node.GetAttributeValue(_T("count"), szValue, cchLen) )
                 count = _tcstol(szValue, &pstr, 10);
-            cchLen = lengthof(szValue) - 1;
             if ( !node.GetAttributeValue(_T("source"), szValue, cchLen) ) continue;
             for ( int i = 0; i < count; i++ ) {
                 CDialogBuilder builder;
@@ -222,6 +221,43 @@ CControlUI* CDialogBuilder::_Parse(CMarkupNode* pRoot, CControlUI* pParent, CPai
                 }
                 else {
                     pControl = builder.Create((LPCTSTR)szValue, (UINT)0, m_pCallback, pManager, pParent);
+                }
+            }
+			LPCTSTR lpstrName = NULL;
+			for (int i = 0; i < node.GetAttributeCount(); i++) {
+				lpstrName = node.GetAttributeName(i);
+				if( _tcsicmp(lpstrName, _T("count")) == 0 ) continue; // pasered already
+				else if( _tcsicmp(lpstrName, _T("source")) == 0 ) continue; // pasered already
+				else if( _tcsicmp(lpstrName, _T("group")) == 0 ) {
+					if ( !node.GetAttributeValue(lpstrName, szValue, cchLen) ) continue;
+					CContainerUI *pContainer = (CContainerUI*)pControl->GetInterface(DUI_CTR_CONTAINER);
+					if (pContainer == NULL) continue;
+					CDuiPtrArray ptFind = *pManager->FindSubControlsByClass(pControl, DUI_CTR_OPTION);
+					for (int j = 0; j < ptFind.GetSize(); j++) {
+						CControlUI *pCtrl = (CControlUI*)ptFind.GetAt(j);
+						if (pCtrl == NULL) continue;
+						pCtrl->SetAttribute(lpstrName, szValue);
+					}
+				}
+				else if (_tcsstr(lpstrName, _T("ctrlattr")) != NULL) {
+					if (!node.GetAttributeValue(lpstrName, szValue, cchLen)) continue;
+					int idx = 0; _stscanf(lpstrName,"%*[^0-9]%d", &idx);
+					CContainerUI *pContainer = (CContainerUI*)pControl->GetInterface(DUI_CTR_CONTAINER);
+					if (pContainer == NULL) continue;
+					CDuiPtrArray ptFind = *pManager->FindSubControlsByCustomAttr(pControl, "ctrlindex");
+					for (int j = 0; j < ptFind.GetSize(); j++) {
+						CControlUI *pCtrl = (CControlUI*)ptFind.GetAt(j);
+						if (pCtrl == NULL) continue;
+						LPCTSTR lpstrCtrlIndex = pCtrl->GetCustomAttribute("ctrlindex");
+						if (atoi(lpstrCtrlIndex) == idx) {
+							pCtrl->SetAttributeList(szValue);
+							break;
+						}
+					}
+				}
+				else {
+					if (!node.GetAttributeValue(lpstrName, szValue, cchLen)) continue;
+					pControl->SetAttribute(lpstrName, szValue);
                 }
             }
             continue;
@@ -420,9 +456,9 @@ CControlUI* CDialogBuilder::_Parse(CMarkupNode* pRoot, CControlUI* pParent, CPai
                 pControl->SetAttribute(node.GetAttributeName(i), node.GetAttributeValue(i));
             }
         }
-        if( pManager ) {
-            pControl->SetManager(NULL, NULL, false);
-        }
+//         if( pManager ) {
+//             pControl->SetManager(NULL, NULL, false);
+//         }
         // Return first item
         if( pReturn == NULL ) pReturn = pControl;
     }

@@ -84,6 +84,46 @@ public:
     void SetCharFormat(CHARFORMAT2W &c);
     void SetParaFormat(PARAFORMAT2 &p);
 
+	ITextHost * GetTextHost()
+	{
+		AddRef();
+		return this;
+	}
+
+	ITextServices * GetTextServices2()
+	{
+		if (NULL == pserv)
+			return NULL;
+		pserv->AddRef();
+		return pserv;
+	}
+
+	BOOL SetOleCallback(IRichEditOleCallback* pCallback)
+	{
+		if (NULL == pserv)
+			return FALSE;
+		HRESULT lRes = 0;
+		pserv->TxSendMessage(EM_SETOLECALLBACK, 0, (LPARAM)pCallback, &lRes);
+		return (BOOL)lRes;
+	}
+
+	BOOL CanPaste(UINT nFormat = 0)
+	{
+		if (NULL == pserv)
+			return FALSE;
+		HRESULT lRes = 0;
+		pserv->TxSendMessage(EM_CANPASTE, nFormat, 0L, &lRes);
+		return (BOOL)lRes;
+	}
+
+	void PasteSpecial(UINT uClipFormat, DWORD dwAspect = 0, HMETAFILE hMF = 0)
+	{
+		if (NULL == pserv)
+			return;
+		REPASTESPECIAL reps = { dwAspect, (DWORD_PTR)hMF };
+		pserv->TxSendMessage(EM_PASTESPECIAL, uClipFormat, (LPARAM)&reps, NULL);
+	}
+
     // -----------------------------
     //	IUnknown interface
     // -----------------------------
@@ -1731,7 +1771,7 @@ HRESULT CRichEditUI::TxSendMessage(UINT msg, WPARAM wparam, LPARAM lparam, LRESU
 {
     if( m_pTwh ) {
         if( msg == WM_KEYDOWN && TCHAR(wparam) == VK_RETURN ) {
-			SHORT sCtrlState = ::GetKeyState(VK_CONTROL); // sCtrlState>0: pressed, or unpressed
+			SHORT sCtrlState = ::GetKeyState(VK_CONTROL); // sCtrlState<0: pressed, or unpressed
             if( (sCtrlState >= 0 && !m_bWantReturn) || (sCtrlState < 0 && !m_bWantCtrlReturn) ) {
                 if( m_pManager != NULL ) m_pManager->SendNotify((CControlUI*)this, DUI_MSGTYPE_RETURN);
                 return S_OK;
@@ -2452,5 +2492,39 @@ DWORD CRichEditUI::GetTipValueColor()
 	return m_dwTipInfoColor;
 }
 
+ITextHost * CRichEditUI::GetTextHost()
+{
+	if (NULL == m_pTwh)
+		return NULL;
+	return m_pTwh->GetTextHost();
+}
+
+ITextServices * CRichEditUI::GetTextServices()
+{
+	if (NULL == m_pTwh)
+		return NULL;
+	return m_pTwh->GetTextServices2();
+}
+
+BOOL CRichEditUI::SetOleCallback(IRichEditOleCallback* pCallback)
+{
+	if (NULL == m_pTwh)
+		return FALSE;
+	return m_pTwh->SetOleCallback(pCallback);
+}
+
+BOOL CRichEditUI::CanPaste(UINT nFormat/* = 0*/)
+{
+	if (NULL == m_pTwh)
+		return FALSE;
+	return m_pTwh->CanPaste(nFormat);
+}
+
+void CRichEditUI::PasteSpecial(UINT uClipFormat, DWORD dwAspect/* = 0*/, HMETAFILE hMF/* = 0*/)
+{
+	if (NULL == m_pTwh)
+		return;
+	m_pTwh->PasteSpecial(uClipFormat, dwAspect, hMF);
+}
 
 } // namespace DuiLib

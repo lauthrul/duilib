@@ -134,7 +134,7 @@ public:
     virtual void SetFloat(bool bFloat = true);
 
 	// 自定义(未处理的)属性
-	void AddCustomAttribute(LPCTSTR pstrName, LPCTSTR pstrAttr);
+	void SetCustomAttribute(LPCTSTR pstrName, LPCTSTR pstrAttr);
 	LPCTSTR GetCustomAttribute(LPCTSTR pstrName) const;
 	bool RemoveCustomAttribute(LPCTSTR pstrName);
 	void RemoveAllCustomAttribute();

@@ -387,6 +387,9 @@ public:
     CControlUI* FindControl(LPCTSTR pstrName) const;
     CControlUI* FindSubControlByPoint(CControlUI* pParent, POINT pt) const;
     CControlUI* FindSubControlByName(CControlUI* pParent, LPCTSTR pstrName) const;
+    CDuiPtrArray* FindSubControlsByName(CControlUI* pParent, LPCTSTR pstrName);
+	CControlUI* FindSubControlByCustomAttr(CControlUI* pParent, LPCTSTR pstrName) const;
+	CDuiPtrArray* FindSubControlsByCustomAttr(CControlUI* pParent, LPCTSTR pstrName);
     CControlUI* FindSubControlByClass(CControlUI* pParent, LPCTSTR pstrClass, int iIndex = 0);
     CDuiPtrArray* FindSubControlsByClass(CControlUI* pParent, LPCTSTR pstrClass);
 
@@ -408,6 +411,9 @@ private:
     static CControlUI* CALLBACK __FindControlFromTab(CControlUI* pThis, LPVOID pData);
     static CControlUI* CALLBACK __FindControlFromShortcut(CControlUI* pThis, LPVOID pData);
     static CControlUI* CALLBACK __FindControlFromName(CControlUI* pThis, LPVOID pData);
+    static CControlUI* CALLBACK __FindControlsFromName(CControlUI* pThis, LPVOID pData);
+	static CControlUI* CALLBACK __FindControlFromCustomAttr(CControlUI* pThis, LPVOID pData);
+	static CControlUI* CALLBACK __FindControlsFromCustomAttr(CControlUI* pThis, LPVOID pData);
     static CControlUI* CALLBACK __FindControlFromClass(CControlUI* pThis, LPVOID pData);
     static CControlUI* CALLBACK __FindControlsFromClass(CControlUI* pThis, LPVOID pData);
 	static CControlUI* CALLBACK __FindControlsFromUpdate(CControlUI* pThis, LPVOID pData);

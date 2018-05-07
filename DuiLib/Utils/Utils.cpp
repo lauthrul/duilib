@@ -1048,4 +1048,9 @@ namespace DuiLib
 		return m_dwColor;
 	}
 
+	bool CDuiColor::operator==(const CDuiColor& lh)
+	{
+		return (m_dwColor == lh.m_dwColor) || (m_strText == lh.m_strText);
+	}
+
 } // namespace DuiLib

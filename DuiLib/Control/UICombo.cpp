@@ -140,12 +140,14 @@ public:
     CVerticalLayoutUI* m_pLayout;
     int m_iOldSel;
     bool m_bScrollbarClicked;
+	CShadowUI* m_pShadow;
 };
 
 
 void CComboWnd::Init(CComboUI* pOwner)
 {
     m_pOwner = pOwner;
+	m_pShadow = pOwner->GetShadow();
     m_pLayout = NULL;
     m_iOldSel = m_pOwner->GetCurSel();
     m_bScrollbarClicked = false;
@@ -154,9 +156,12 @@ void CComboWnd::Init(CComboUI* pOwner)
     SIZE szDrop = m_pOwner->GetDropBoxSize();
     RECT rcOwner = pOwner->GetPos();
     RECT rc = rcOwner;
+	OffsetRect(&rc, pOwner->GetDropBoxOffset().x, pOwner->GetDropBoxOffset().y);
+
     rc.top = rc.bottom;		// 父窗口left、bottom位置作为弹出窗口起点
     rc.bottom = rc.top + szDrop.cy;	// 计算弹出窗口高度
-    if( szDrop.cx > 0 ) rc.right = rc.left + szDrop.cx;	// 计算弹出窗口宽度
+    if( szDrop.cx > 0 )		rc.right = rc.left + szDrop.cx;	// 计算弹出窗口宽度
+	else if (szDrop.cx < 0)	rc.right = rc.right + szDrop.cx;
 
     SIZE szAvailable = { rc.right - rc.left, rc.bottom - rc.top };
     int cyFixed = 0;
@@ -190,6 +195,8 @@ void CComboWnd::Init(CComboUI* pOwner)
     while( ::GetParent(hWndParent) != NULL ) hWndParent = ::GetParent(hWndParent);
     ::ShowWindow(m_hWnd, SW_SHOW);
     //::SendMessage(hWndParent, WM_NCACTIVATE, TRUE, 0L);
+
+	m_pShadow->Create(&m_pm);
 }
 
 LPCTSTR CComboWnd::GetWindowClassName() const
@@ -316,6 +323,21 @@ LRESULT CComboWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
     }
+	else if (uMsg == WM_SIZE) {
+		SIZE szRoundCorner = m_pOwner->GetDropBoxRoundCorner();
+#if defined(WIN32) && !defined(UNDER_CE)
+		if( !::IsIconic(*this) /*&& (szRoundCorner.cx != 0 || szRoundCorner.cy != 0)*/ ) {
+			CDuiRect rcWnd;
+			::GetWindowRect(*this, &rcWnd);
+			rcWnd.Offset(-rcWnd.left, -rcWnd.top);
+			rcWnd.right++; rcWnd.bottom++;
+			HRGN hRgn = ::CreateRoundRectRgn(rcWnd.left, rcWnd.top, rcWnd.right, rcWnd.bottom, szRoundCorner.cx, szRoundCorner.cy);
+			::SetWindowRgn(*this, hRgn, TRUE);
+			::DeleteObject(hRgn);
+		}
+#endif
+		return 0;
+	}
 
     LRESULT lRes = 0;
     if( m_pm.MessageHandler(uMsg, wParam, lParam, lRes) ) return lRes;
@@ -358,6 +380,8 @@ CComboUI::CComboUI() : m_pWindow(NULL), m_iCurSel(-1), m_uButtonState(0)
 {
     m_szDropBox = CDuiSize(0, 150);
     ::ZeroMemory(&m_rcTextPadding, sizeof(m_rcTextPadding));
+	::ZeroMemory(&m_ptDropBoxOffset, sizeof(m_ptDropBoxOffset));
+	::ZeroMemory(&m_szRoundCorner, sizeof(m_szRoundCorner));
 
     m_ListInfo.nColumns = 0;
     m_ListInfo.uFixedHeight = 0;
@@ -771,6 +795,28 @@ void CComboUI::SetDropBoxSize(SIZE szDropBox)
     m_szDropBox = szDropBox;
 }
 
+SIZE CComboUI::GetDropBoxRoundCorner() const
+{
+	return m_szRoundCorner;
+}
+
+void CComboUI::SetDropBoxRoundCorner(int cx, int cy)
+{
+	m_szRoundCorner.cx = cx;
+	m_szRoundCorner.cy = cy;
+}
+
+POINT CComboUI::GetDropBoxOffset() const
+{
+	return m_ptDropBoxOffset;
+}
+
+void CComboUI::SetDropBoxOfsset(int x, int y)
+{
+	m_ptDropBoxOffset.x = x;
+	m_ptDropBoxOffset.y = y;
+}
+
 bool CComboUI::GetShowText() const
 {
 	return m_bShowText;
@@ -1129,14 +1175,62 @@ void CComboUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
     else if( _tcscmp(pstrName, _T("pushedimage")) == 0 ) SetPushedImage(pstrValue);
     else if( _tcscmp(pstrName, _T("focusedimage")) == 0 ) SetFocusedImage(pstrValue);
     else if( _tcscmp(pstrName, _T("disabledimage")) == 0 ) SetDisabledImage(pstrValue);
-    else if( _tcscmp(pstrName, _T("dropbox")) == 0 ) SetDropBoxAttributeList(pstrValue);
-	else if( _tcscmp(pstrName, _T("dropboxsize")) == 0)
-	{
+    else if( _tcscmp(pstrName, _T("dropboxattr")) == 0 ) SetDropBoxAttributeList(pstrValue);
+	else if( _tcscmp(pstrName, _T("dropboxsize")) == 0) {
 		SIZE szDropBoxSize = { 0 };
 		LPTSTR pstr = NULL;
-		szDropBoxSize.cx = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);    
-		szDropBoxSize.cy = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr);    
+		szDropBoxSize.cx = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+		szDropBoxSize.cy = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr);
 		SetDropBoxSize(szDropBoxSize);
+	}
+	else if( _tcsicmp(pstrName, _T("dropboxroundcorner")) == 0 ) {
+		LPTSTR pstr = NULL;
+		int cx = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+		int cy = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr); 
+		SetDropBoxRoundCorner(cx, cy);
+	}
+	else if( _tcscmp(pstrName, _T("dropboxoffset")) == 0) {
+		POINT pt = { 0 };
+		LPTSTR pstr = NULL;
+		pt.x = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+		pt.y = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr);
+		SetDropBoxOfsset(pt.x, pt.y);
+	}
+	else if( _tcscmp(pstrName, _T("shadowsize")) == 0 ) {
+		GetShadow()->SetSize(_ttoi(pstrValue));
+	}
+	else if( _tcscmp(pstrName, _T("shadowsharpness")) == 0 ) {
+		GetShadow()->SetSharpness(_ttoi(pstrValue));
+	}
+	else if( _tcscmp(pstrName, _T("shadowdarkness")) == 0 ) {
+		GetShadow()->SetDarkness(_ttoi(pstrValue));
+	}
+	else if( _tcscmp(pstrName, _T("shadowposition")) == 0 ) {
+		LPTSTR pstr = NULL;
+		int cx = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+		int cy = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr); 
+		GetShadow()->SetPosition(cx, cy);
+	}
+	else if( _tcscmp(pstrName, _T("shadowcolor")) == 0 ) {
+		if( *pstrValue == _T('#')) pstrValue = ::CharNext(pstrValue);
+		LPTSTR pstr = NULL;
+		DWORD clrColor = _tcstoul(pstrValue, &pstr, 16);
+		GetShadow()->SetColor(clrColor);
+	}
+	else if( _tcscmp(pstrName, _T("shadowcorner")) == 0 ) {
+		RECT rcCorner = { 0 };
+		LPTSTR pstr = NULL;
+		rcCorner.left = _tcstol(pstrValue, &pstr, 10);  ASSERT(pstr);
+		rcCorner.top = _tcstol(pstr + 1, &pstr, 10);    ASSERT(pstr);
+		rcCorner.right = _tcstol(pstr + 1, &pstr, 10);  ASSERT(pstr);
+		rcCorner.bottom = _tcstol(pstr + 1, &pstr, 10); ASSERT(pstr);
+		GetShadow()->SetShadowCorner(rcCorner);
+	}
+	else if( _tcscmp(pstrName, _T("shadowimage")) == 0 ) {
+		GetShadow()->SetImage(pstrValue);
+	}
+	else if( _tcscmp(pstrName, _T("showshadow")) == 0 ) {
+		GetShadow()->ShowShadow(_tcscmp(pstrValue, _T("true")) == 0);
 	}
     else if( _tcscmp(pstrName, _T("itemheight")) == 0 ) m_ListInfo.uFixedHeight = _ttoi(pstrValue);
     else if( _tcscmp(pstrName, _T("itemfont")) == 0 ) m_ListInfo.nFont = _ttoi(pstrValue);
@@ -1289,6 +1383,11 @@ void CComboUI::PaintText(HDC hDC)
             pControl->SetPos(rcOldPos, false);
         }
     }
+}
+
+CShadowUI* CComboUI::GetShadow()
+{
+	return &m_shadow;
 }
 
 } // namespace DuiLib

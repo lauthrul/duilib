@@ -712,15 +712,14 @@ void CControlUI::SetFloat(bool bFloat)
     NeedParentUpdate();
 }
 
-void CControlUI::AddCustomAttribute(LPCTSTR pstrName, LPCTSTR pstrAttr)
+void CControlUI::SetCustomAttribute(LPCTSTR pstrName, LPCTSTR pstrAttr)
 {
 	if( pstrName == NULL || pstrName[0] == _T('\0') || pstrAttr == NULL || pstrAttr[0] == _T('\0') ) return;
 	CDuiString* pCostomAttr = new CDuiString(pstrAttr);
 	if (pCostomAttr != NULL) {
-		if (m_mCustomAttrHash.Find(pstrName) == NULL)
+		LPVOID lpValue = m_mCustomAttrHash.Find(pstrName);
+		if (lpValue != NULL) delete (CDuiString*)lpValue;
 			m_mCustomAttrHash.Set(pstrName, (LPVOID)pCostomAttr);
-		else
-			delete pCostomAttr;
 	}
 }
 
@@ -1062,7 +1061,7 @@ void CControlUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
     else if( _tcscmp(pstrName, _T("menu")) == 0 ) SetContextMenuUsed(_tcscmp(pstrValue, _T("true")) == 0);
 	else if( _tcscmp(pstrName, _T("virtualwnd")) == 0 ) SetVirtualWnd(pstrValue);
 	else {
-		AddCustomAttribute(pstrName, pstrValue);
+		SetCustomAttribute(pstrName, pstrValue);
 	}
 }
 
