@@ -241,15 +241,15 @@ CControlUI* CDialogBuilder::_Parse(CMarkupNode* pRoot, CControlUI* pParent, CPai
 				}
 				else if (_tcsstr(lpstrName, _T("ctrlattr")) != NULL) {
 					if (!node.GetAttributeValue(lpstrName, szValue, cchLen)) continue;
-					int idx = 0; _stscanf(lpstrName,"%*[^0-9]%d", &idx);
+					int idx = 0; _stscanf(lpstrName, _T("%*[^0-9]%d"), &idx);
 					CContainerUI *pContainer = (CContainerUI*)pControl->GetInterface(DUI_CTR_CONTAINER);
 					if (pContainer == NULL) continue;
-					CDuiPtrArray ptFind = *pManager->FindSubControlsByCustomAttr(pControl, "ctrlindex");
+					CDuiPtrArray ptFind = *pManager->FindSubControlsByCustomAttr(pControl, _T("ctrlindex"));
 					for (int j = 0; j < ptFind.GetSize(); j++) {
 						CControlUI *pCtrl = (CControlUI*)ptFind.GetAt(j);
 						if (pCtrl == NULL) continue;
-						LPCTSTR lpstrCtrlIndex = pCtrl->GetCustomAttribute("ctrlindex");
-						if (atoi(lpstrCtrlIndex) == idx) {
+						LPCTSTR lpstrCtrlIndex = pCtrl->GetCustomAttribute(_T("ctrlindex"));
+						if (_tstoi(lpstrCtrlIndex) == idx) {
 							pCtrl->SetAttributeList(szValue);
 							break;
 						}

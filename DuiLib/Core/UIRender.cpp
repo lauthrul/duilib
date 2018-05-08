@@ -1161,10 +1161,11 @@ void CRenderEngine::DrawColor(HDC hDC, const RECT& rc, DWORD color)
         if( !hBitmap ) return;
 
         *pDest = color;
+        BYTE fade = color >> 24;
 
         RECT rcBmpPart = {0, 0, 1, 1};
         RECT rcCorners = {0};
-        DrawImage(hDC, hBitmap, rc, rc, rcBmpPart, rcCorners, true, 255);
+        DrawImage(hDC, hBitmap, rc, rc, rcBmpPart, rcCorners, true, fade);
         ::DeleteObject(hBitmap);
     }
 }
@@ -2200,6 +2201,64 @@ SIZE CRenderEngine::GetTextSize( HDC hDC, CPaintManagerUI* pManager , LPCTSTR ps
 	GetTextExtentPoint32(hDC, pstrText, _tcslen(pstrText) , &size);
 	::SelectObject(hDC, hOldFont);
 	return size;
+}
+
+namespace {
+    //@brief 获取图片文件的编码方式，支持bmp、jpg、jpeg、gif、tiff和png等格式图片
+    //@date   1-13-2009  
+    //@param [in]  format 图片格式 值可以为以下几种
+    //@"image/bmp"
+    //@"image/jpeg"
+    //@"image/gif"
+    //@"image/tiff"
+    //@"image/png"
+    //@param [in]  pClsid
+    //@return  成功则返回值 >= 0，失败则返回值为-1
+    int GetEncoderClsid(const WCHAR* format, CLSID *pClsid)
+    {
+        int nRet = -1;
+        ImageCodecInfo* pCodecInfo = NULL;
+        UINT nNum = 0, nSize = 0;
+        GetImageEncodersSize(&nNum, &nSize);
+
+        if (nSize < 0) return nRet;
+
+        pCodecInfo = new ImageCodecInfo[nSize];
+        if (pCodecInfo == NULL) return nRet;
+
+        GetImageEncoders(nNum, nSize, pCodecInfo);
+
+        for (UINT i = 0; i < nNum; i++)
+        {
+            if (wcscmp(pCodecInfo[i].MimeType, format) == 0)
+            {
+                *pClsid = pCodecInfo[i].Clsid;
+                nRet = i;
+                delete[] pCodecInfo;
+                return nRet;
+            }
+        }
+
+        delete[] pCodecInfo;
+        return nRet;
+    }
+}
+
+BOOL CRenderEngine::SaveBitmapToFile(HBITMAP hBitmap, LPTSTR lpszFileName)
+{
+    CLSID pngClsid;
+    Bitmap bmp(hBitmap, NULL);
+    //获取BMP文件的编码方式(如果希望获取JPEG的编码方式，
+    //那么参数一要设置为：_TEXT("image/jpeg")，其他支持的图片格式类似)
+    int nResult = GetEncoderClsid(L"image/bmp", &pngClsid);
+    if (nResult >= 0)
+    {
+        USES_CONVERSION;
+        WCHAR* pFileName = T2W(lpszFileName);
+        Status st = bmp.Save(pFileName, &pngClsid);
+        return st == Ok;
+    }
+    return FALSE;
 }
 
 } // namespace DuiLib

@@ -67,6 +67,7 @@
 #include <crtdbg.h>
 #include <malloc.h>
 #include <stdio.h>
+#include <atlbase.h>
 
 #include "Utils/Utils.h"
 #include "Utils/UIShadow.h"

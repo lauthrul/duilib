@@ -36,7 +36,9 @@ LRESULT WindowImplBase::ResponseDefaultKeyEvent(WPARAM wParam)
 void WindowImplBase::SetTitle(LPCTSTR pstrTitle)
 {
     CControlUI *pCtrl = m_PaintManager.FindControl(_T("title"));
-    if (pCtrl) pCtrl->SetText(pstrTitle);
+    if (pCtrl && pCtrl->GetText().IsEmpty()) {
+        pCtrl->SetText(pstrTitle);
+    }
 }
 
 UINT WindowImplBase::GetClassStyle() const
